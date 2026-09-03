@@ -261,7 +261,11 @@ window.addEventListener("DOMContentLoaded", async () => {
       });
       await invoke("preview");
       await refresh();
+      toast("Profile saved");
     } catch (err) {
+      // Without this the form just sat there: the only trace of a rejected
+      // profile was a line in the log tail.
+      toast(`Could not save the profile: ${err}`);
       pushTail(`tofv: ${err}`);
     }
   });

@@ -156,6 +156,12 @@ In KWalletManager or Seahorse it appears as *TOFV password (default)*.
 If your keyring is locked when you click Connect, your desktop will prompt to
 unlock it — that prompt comes from the wallet, not from TOFV.
 
+**Preview.** Shows the exact command TOFV would run and the config it would
+write, with the one-time code and any other secret already redacted, *without
+connecting*. It is there so you never have to take the wrapper's word for what
+it does with your credentials — the same text is what the log window shows
+during a real connection.
+
 **Certificate rotation.** If the gateway's certificate changes, TOFV reopens
 the trust dialog with the old and new fingerprints side by side instead of
 failing silently.
