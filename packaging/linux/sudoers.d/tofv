@@ -1,0 +1,3 @@
+# Alternative to Polkit. Install as /etc/sudoers.d/tofv (visudo -c first).
+# Only the helper — never raw openfortivpn (see --pppd-plugin in the README).
+%wheel ALL=(root) NOPASSWD: /usr/local/libexec/tofv-helper

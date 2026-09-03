@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>TOFV</vendor>
+  <vendor_url>https://github.com/ange/tofv</vendor_url>
+  <action id="dev.tofv.manage">
+    <description>Start or stop the TOFV Fortinet VPN tunnel</description>
+    <description xml:lang="fr">Démarrer ou arrêter le tunnel VPN TOFV</description>
+    <message>TOFV needs to start or stop openfortivpn</message>
+    <message xml:lang="fr">TOFV doit démarrer ou arrêter openfortivpn</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXEC@/tofv-helper</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+</policyconfig>

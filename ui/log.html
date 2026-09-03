@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TOFV — journal</title>
+    <link rel="icon" href="/mark.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Oxanium:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="journal-page">
+    <div class="chrome" data-tauri-drag-region>
+      <div class="chrome-brand" data-tauri-drag-region>
+        <img class="chrome-mark" src="/mark.png" alt="" width="18" height="18" />
+        <span>JOURNAL</span>
+      </div>
+      <div class="chrome-drag" data-tauri-drag-region></div>
+      <div class="win-ctrl">
+        <button type="button" id="win-min" title="Réduire" aria-label="Réduire">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 9.5h8" /></svg>
+        </button>
+        <button type="button" id="win-max" title="Agrandir" aria-label="Agrandir">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2.5" width="7" height="7" /></svg>
+        </button>
+        <button type="button" id="win-close" title="Fermer" aria-label="Fermer">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" /></svg>
+        </button>
+      </div>
+    </div>
+    <pre id="meta" class="console cmd journal-meta">—</pre>
+    <pre id="full-log" class="console log journal-full">en attente.</pre>
+    <script type="module" src="/src/log.ts"></script>
+  </body>
+</html>

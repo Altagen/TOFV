@@ -1,0 +1,20 @@
+[package]
+name = "tofv-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Profile, command planning, and openfortivpn wrapping for TOFV"
+
+[[bin]]
+name = "tofv"
+path = "src/bin/tofv.rs"
+
+[dependencies]
+clap.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+zeroize.workspace = true
+ctrlc.workspace = true
+libc = "0.2"

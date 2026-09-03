@@ -1,0 +1,374 @@
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { bindChrome } from "./chrome";
+
+type UiStatus =
+  | "idle"
+  | "connecting"
+  | "up"
+  | "disconnecting"
+  | "need-cert"
+  | "auth-failed"
+  | "error";
+
+type Snapshot = {
+  status: UiStatus;
+  profile: {
+    host: string;
+    port: number;
+    username: string;
+    realm: string;
+    trustedCert: string | null;
+    authMethod: string;
+    hasPassword: boolean;
+  };
+  logs: string[];
+  command: string | null;
+  configRedacted: string | null;
+  needCert: string | null;
+  lastError: string | null;
+  doctor: {
+    blocking: boolean;
+    helperOk: boolean;
+    trayOk: boolean;
+    installCmd: string;
+    helperCmd: string;
+    items: {
+      id: string;
+      ok: boolean;
+      blocking: boolean;
+      label: string;
+      detail: string;
+    }[];
+  };
+};
+
+const TAIL = 10;
+let tail: string[] = [];
+let toastTimer = 0;
+
+const $ = <T extends HTMLElement>(id: string) =>
+  document.getElementById(id) as T;
+
+let tailFrame = 0;
+
+function paintTail() {
+  // `openfortivpn -v` logs a line per packet: repaint once per frame, not
+  // once per line, or the webview spins re-joining the whole tail.
+  if (tailFrame) return;
+  tailFrame = requestAnimationFrame(() => {
+    tailFrame = 0;
+    $("journal").textContent = tail.length ? tail.join("\n") : "en attente.";
+  });
+}
+
+function pushTail(line: string) {
+  tail.push(line);
+  if (tail.length > TAIL) tail = tail.slice(-TAIL);
+  paintTail();
+}
+
+const labels: Record<UiStatus, string> = {
+  idle: "déconnecté",
+  connecting: "connexion…",
+  disconnecting: "coupure…",
+  up: "connecté",
+  "need-cert": "certificat à épingler",
+  "auth-failed": "auth refusée",
+  error: "erreur",
+};
+
+function render(s: Snapshot) {
+  const led = $("led");
+  led.className = `led ${s.status}`;
+  led.dataset.status = s.status;
+  $("status-label").textContent = labels[s.status] ?? s.status;
+
+  ($("host") as HTMLInputElement).value = s.profile.host;
+  ($("port") as HTMLInputElement).value = String(s.profile.port);
+  ($("username") as HTMLInputElement).value = s.profile.username;
+  ($("realm") as HTMLInputElement).value = s.profile.realm;
+  ($("trusted") as HTMLInputElement).value = s.profile.trustedCert ?? "";
+  $("pass-state").textContent = s.profile.hasPassword
+    ? "stocké dans le trousseau"
+    : "non stocké";
+
+  applyDoctor(s.doctor);
+
+  const byId = (id: string) => s.doctor.items.find((i) => i.id === id);
+  $("doc-vpn").textContent = byId("openfortivpn")?.detail ?? "…";
+  $("doc-secret").textContent = byId("secret-tool")?.detail ?? "…";
+  $("doc-helper").textContent = byId("helper")?.detail ?? "…";
+
+  $("command").textContent = s.command ?? "—";
+  tail = s.logs.slice(-TAIL);
+  paintTail();
+
+  const busy =
+    s.status === "up" || s.status === "connecting" || s.status === "disconnecting";
+  ($("btn-connect") as HTMLButtonElement).disabled = busy;
+  ($("btn-disconnect") as HTMLButtonElement).disabled =
+    s.status === "idle" || s.status === "disconnecting";
+
+  if (s.needCert) {
+    showCertModal(s.needCert, s.profile.trustedCert);
+  }
+}
+
+function applyDoctor(d: Snapshot["doctor"]) {
+  const gate = $("gate");
+  const banner = $("banner-helper");
+  const mast = document.querySelector("header.mast") as HTMLElement | null;
+  const scroll = document.querySelector(".scroll") as HTMLElement | null;
+  gate.hidden = !d.blocking;
+  if (mast) mast.hidden = d.blocking;
+  if (scroll) scroll.hidden = d.blocking;
+  banner.hidden = d.blocking || d.helperOk;
+
+  const list = $("gate-list");
+  list.replaceChildren();
+  for (const item of d.items.filter((i) => !i.ok)) {
+    const li = document.createElement("li");
+    li.className = item.blocking ? "bad" : "warn";
+    li.textContent = `${item.label} : ${item.detail}`;
+    list.appendChild(li);
+  }
+  $("gate-cmd").textContent = d.installCmd;
+  $("gate-helper").textContent = d.helperCmd;
+}
+
+function showCertModal(sha256: string, previous: string | null) {
+  $("cert-hex").textContent = sha256;
+  const rotated = !!(previous && previous !== sha256);
+  $("cert-old-block").hidden = !rotated;
+  $("cert-old").textContent = previous ?? "";
+  $("cert-title").textContent = rotated
+    ? "Le certificat de la passerelle a changé"
+    : "Faire confiance au certificat ?";
+  $("cert-lede").textContent = rotated
+    ? "Rotation probable. Compare l’ancienne empreinte et la nouvelle, puis épingler et reconnecter (nouveau TOTP)."
+    : "openfortivpn refuse cette empreinte SHA-256. Vérifie-la avant de l’épingler.";
+  $("modal-cert").hidden = false;
+}
+
+async function refresh() {
+  const s = await invoke<Snapshot>("get_state");
+  render(s);
+  return s;
+}
+
+function syncOtpButton() {
+  const otp = ($("otp") as HTMLInputElement).value.trim();
+  ($("otp-go") as HTMLButtonElement).disabled = !/^\d{6}$/.test(otp);
+}
+
+function toast(msg: string) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.hidden = false;
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    el.hidden = true;
+  }, 7000);
+}
+
+function closeOtp() {
+  $("modal-otp").hidden = true;
+}
+
+function openOtp(error?: string | null) {
+  $("modal-otp").hidden = false;
+  $("otp-error").textContent = error ?? "";
+  const otp = $("otp") as HTMLInputElement;
+  otp.value = "";
+  syncOtpButton();
+  otp.focus();
+}
+
+async function startConnect() {
+  try {
+    await invoke("begin_connect");
+  } catch (err) {
+    toast(String(err));
+    pushTail(`tofv: ${err}`);
+  }
+}
+
+async function doConnect(otp: string) {
+  const errEl = $("otp-error");
+  errEl.textContent = "";
+  const btn = $("otp-go") as HTMLButtonElement;
+  btn.disabled = true;
+  try {
+    await invoke("connect", { otp });
+    await refresh();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    errEl.textContent = msg;
+    pushTail(`tofv: ${msg}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function needPassword() {
+  toast("Aucun mot de passe dans le trousseau — saisis-le puis Trousseau.");
+  $("pass-state").textContent =
+    "aucun mot de passe — saisis-le et clique Trousseau";
+  ($("password") as HTMLInputElement).focus();
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  bindChrome("hide");
+  $("gate-recheck").addEventListener("click", () => {
+    void refresh();
+  });
+
+  $("profile-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      await invoke("save_profile", {
+        patch: {
+          host: ($("host") as HTMLInputElement).value,
+          port: Number(($("port") as HTMLInputElement).value),
+          username: ($("username") as HTMLInputElement).value,
+          realm: ($("realm") as HTMLInputElement).value,
+          trustedCert: ($("trusted") as HTMLInputElement).value || null,
+        },
+      });
+      const pass = ($("password") as HTMLInputElement).value;
+      if (pass) {
+        await invoke("save_password", { password: pass });
+        ($("password") as HTMLInputElement).value = "";
+      }
+      await invoke("preview");
+      await refresh();
+    } catch (err) {
+      pushTail(`tofv: ${err}`);
+    }
+  });
+
+  $("btn-save-pass").addEventListener("click", async () => {
+    const input = $("password") as HTMLInputElement;
+    if (!input.value) {
+      $("pass-state").textContent = "saisis le mot de passe VPN, puis Trousseau";
+      input.focus();
+      return;
+    }
+    try {
+      await invoke("save_password", { password: input.value });
+      input.value = "";
+      await refresh();
+    } catch (err) {
+      $("pass-state").textContent = String(err);
+      pushTail(`tofv: ${err}`);
+    }
+  });
+
+  $("btn-connect").addEventListener("click", () => {
+    void startConnect();
+  });
+  $("btn-disconnect").addEventListener("click", async () => {
+    try {
+      await invoke("disconnect_cmd");
+      await refresh();
+    } catch (err) {
+      pushTail(`tofv: ${err}`);
+    }
+  });
+  $("btn-preview").addEventListener("click", async () => {
+    await invoke("preview");
+    await refresh();
+  });
+  $("btn-journal").addEventListener("click", async () => {
+    try {
+      await invoke("open_journal");
+    } catch (err) {
+      pushTail(`tofv: ${err}`);
+    }
+  });
+
+  $("otp-cancel").addEventListener("click", () => closeOtp());
+  $("otp-go").addEventListener("click", async () => {
+    const otp = ($("otp") as HTMLInputElement).value.trim();
+    if (!/^\d{6}$/.test(otp)) {
+      $("otp-error").textContent = "Le code doit contenir exactement 6 chiffres.";
+      return;
+    }
+    await doConnect(otp);
+  });
+  $("otp").addEventListener("input", () => {
+    const el = $("otp") as HTMLInputElement;
+    el.value = el.value.replace(/\D/g, "").slice(0, 6);
+    syncOtpButton();
+  });
+  $("otp").addEventListener("paste", (e) => {
+    const text = e.clipboardData?.getData("text") ?? "";
+    const digits = text.replace(/\D/g, "").slice(0, 6);
+    if (digits) {
+      e.preventDefault();
+      ($("otp") as HTMLInputElement).value = digits;
+      syncOtpButton();
+    }
+  });
+  $("otp").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("otp-go").click();
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("modal-otp").hidden) closeOtp();
+    if (e.key === "Escape" && !$("modal-cert").hidden) $("modal-cert").hidden = true;
+  });
+
+  $("cert-cancel").addEventListener("click", () => {
+    $("modal-cert").hidden = true;
+  });
+  $("cert-trust").addEventListener("click", async () => {
+    const cert = $("cert-hex").textContent ?? "";
+    try {
+      await invoke("trust_cert", { cert });
+      $("modal-cert").hidden = true;
+      await refresh();
+      await invoke("begin_connect");
+    } catch (err) {
+      pushTail(`tofv: ${err}`);
+    }
+  });
+
+  await listen<string>("tofv://log", (ev) => {
+    pushTail(ev.payload);
+  });
+  await listen<UiStatus>("tofv://status", (ev) => {
+    const led = $("led");
+    led.className = `led ${ev.payload}`;
+    $("status-label").textContent = labels[ev.payload] ?? ev.payload;
+    const busy =
+      ev.payload === "up" ||
+      ev.payload === "connecting" ||
+      ev.payload === "disconnecting";
+    ($("btn-connect") as HTMLButtonElement).disabled = busy;
+    ($("btn-disconnect") as HTMLButtonElement).disabled =
+      ev.payload === "idle" || ev.payload === "disconnecting";
+    if (ev.payload === "auth-failed" && !$("modal-otp").hidden) {
+      openOtp(
+        "Code refusé. Le FortiToken F121 change toutes les 60 s — saisis le code affiché maintenant.",
+      );
+    }
+    if (ev.payload === "up" || ev.payload === "need-cert") closeOtp();
+  });
+  await listen<string>("tofv://ask-otp-fallback", (ev) => {
+    openOtp((ev.payload ?? "").trim() || null);
+  });
+  await listen("tofv://need-password", () => needPassword());
+  await listen<string>("tofv://toast", (ev) => {
+    if (ev.payload) toast(ev.payload);
+  });
+  await listen<{ sha256: string; previous: string | null }>("tofv://need-cert", (ev) => {
+    showCertModal(ev.payload.sha256, ev.payload.previous);
+  });
+
+  try {
+    await refresh();
+  } catch (err) {
+    pushTail(String(err));
+  }
+});

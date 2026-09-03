@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TOFV — FortiToken</title>
+    <link rel="icon" href="/mark.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Oxanium:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="otp-page">
+    <div class="chrome" data-tauri-drag-region>
+      <div class="chrome-brand" data-tauri-drag-region>
+        <img class="chrome-mark" src="/mark.png" alt="" width="18" height="18" />
+        <span>FORTITOKEN</span>
+      </div>
+      <div class="chrome-drag" data-tauri-drag-region></div>
+      <div class="win-ctrl">
+        <button type="button" id="win-close" title="Fermer" aria-label="Fermer">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" /></svg>
+        </button>
+      </div>
+    </div>
+    <div class="sheet otp-sheet">
+      <p class="kicker">FortiToken F121</p>
+      <h2 id="otp-title">Code TOTP</h2>
+      <p id="otp-lede" class="lede">
+        Six chiffres lus sur le jeton (fenêtre 60&nbsp;s). Ils vont dans la config éphémère, jamais en argv.
+      </p>
+      <p id="otp-helper" class="banner" hidden>
+        Helper absent — Connect est bloqué jusqu’à <code>./scripts/install.sh</code>.
+      </p>
+      <input
+        id="otp"
+        inputmode="numeric"
+        maxlength="6"
+        pattern="[0-9]{6}"
+        autocomplete="one-time-code"
+        placeholder="••••••"
+        autofocus
+      />
+      <p id="otp-error" class="hint error" role="alert"></p>
+      <div class="actions">
+        <button id="otp-go" class="btn primary" type="button">Envoyer</button>
+        <button id="otp-cancel" class="btn ghost" type="button">Annuler</button>
+      </div>
+    </div>
+    <script type="module" src="/src/otp.ts"></script>
+  </body>
+</html>
