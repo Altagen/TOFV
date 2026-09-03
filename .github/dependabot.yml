@@ -1,14 +1,19 @@
 version: 2
+
+# Grouped on purpose. The first run opened eight pull requests — including two
+# for the same action, because codeql-action/init and codeql-action/analyze are
+# separate entries. Eight CI runs for what is really three decisions is noise
+# that gets ignored, and ignored dependency PRs are how a project goes stale.
 updates:
-  # Actions are pinned to commit SHAs so a compromised tag cannot execute in
-  # CI. Dependabot understands SHA pins and bumps them with the new version in
-  # a comment, so pinning does not mean going stale.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     commit-message:
       prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
 
   - package-ecosystem: cargo
     directory: /
@@ -17,6 +22,12 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "build"
+    groups:
+      # Patch and minor together: they are reviewed as a batch and the test
+      # suite is the gate. Majors stay separate — they deserve their own
+      # reading, especially anything the helper links.
+      cargo-minor:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: npm
     directory: /ui
@@ -25,3 +36,6 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "build"
+    groups:
+      npm-minor:
+        update-types: ["minor", "patch"]

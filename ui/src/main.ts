@@ -28,6 +28,7 @@ type Snapshot = {
   needCert: string | null;
   lastError: string | null;
   doctor: {
+    version: string;
     blocking: boolean;
     helperOk: boolean;
     trayOk: boolean;
@@ -124,6 +125,8 @@ function render(s: Snapshot) {
   ($("trusted") as HTMLInputElement).value = s.profile.trustedCert ?? "";
   renderPassword(s.profile.hasPassword);
 
+  // The doctor is the "is my setup sane?" surface; the version belongs on it.
+  $("app-version").textContent = s.doctor.version ? `v${s.doctor.version}` : "";
   applyDoctor(s.doctor);
 
   const byId = (id: string) => s.doctor.items.find((i) => i.id === id);

@@ -258,6 +258,28 @@ pub fn install_pinentry_wrapper(wrapper: &Path, pinentry_bin: &Path, socket: &Pa
     Ok(())
 }
 
+/// Version of an installed `tofv-helper`, or `None` when it cannot say.
+///
+/// The helper is installed separately from the app — the tarball's
+/// `install-bin.sh` puts it in `/usr/local/libexec` as root — so the two can
+/// drift. They did: a helper from an earlier build kept running for weeks
+/// after the app was updated, and nothing surfaced it.
+///
+/// A helper built before 0.1.1 checked for root before parsing argv, so it
+/// answers `--version` with a privilege error rather than a version. That
+/// silence is itself the signal: it means the binary predates 0.1.1.
+pub fn helper_version(bin: &Path) -> Option<String> {
+    let output = std::process::Command::new(bin)
+        .arg("--version")
+        .output()
+        .ok()?;
+    let text = String::from_utf8_lossy(&output.stdout);
+    let line = text.lines().next()?.trim();
+    line.strip_prefix("tofv-helper ")
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+}
+
 pub fn openfortivpn_version(bin: &Path) -> Option<String> {
     let output = std::process::Command::new(bin)
         .arg("--version")
