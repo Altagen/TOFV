@@ -8,3 +8,4 @@
 ui/node_modules/
 ui/dist/
 packaging/linux/polkit/dev.tofv.policy
+src-tauri/gen/
