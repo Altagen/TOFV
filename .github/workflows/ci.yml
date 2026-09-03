@@ -97,6 +97,26 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: ui/package-lock.json
-      # The UI tree was previously unchecked entirely.
       - run: npm --prefix ui ci
-      - run: npm --prefix ui audit --audit-level=high
+
+      # `npm audit` fails identically whether there is a vulnerability or the
+      # registry is simply down — and npm's advisory endpoint returned a 500
+      # here while being retired, turning an infrastructure blip into a red
+      # build on a release commit. A security gate that cries wolf is a
+      # security gate people learn to ignore, so the two cases are now told
+      # apart: findings fail, an unreachable service warns and moves on.
+      - name: npm audit
+        run: |
+          set -o pipefail
+          if npm --prefix ui audit --audit-level=high --json > audit.json 2> audit.err; then
+            echo "No advisories at or above high."
+            exit 0
+          fi
+          if grep -q '"vulnerabilities"' audit.json; then
+            echo "::error::npm audit reported advisories at or above high."
+            npm --prefix ui audit --audit-level=high || true
+            exit 1
+          fi
+          echo "::warning::npm audit could not reach the registry; not treating this as a finding."
+          cat audit.err
+          exit 0

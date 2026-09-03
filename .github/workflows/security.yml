@@ -30,4 +30,19 @@ jobs:
         with:
           node-version: 22
       - run: npm --prefix ui ci
-      - run: npm --prefix ui audit --audit-level=high
+      # See ci.yml: a registry outage is not a finding.
+      - name: npm audit
+        run: |
+          set -o pipefail
+          if npm --prefix ui audit --audit-level=high --json > audit.json 2> audit.err; then
+            echo "No advisories at or above high."
+            exit 0
+          fi
+          if grep -q '"vulnerabilities"' audit.json; then
+            echo "::error::npm audit reported advisories at or above high."
+            npm --prefix ui audit --audit-level=high || true
+            exit 1
+          fi
+          echo "::warning::npm audit could not reach the registry; not treating this as a finding."
+          cat audit.err
+          exit 0
