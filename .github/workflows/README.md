@@ -41,6 +41,23 @@ Most are the archived gtk-rs GTK3 bindings that arrive through Tauri; TOFV
 cannot drop them without dropping Tauri. They are ignored explicitly so the
 list stays reviewable, rather than by turning the check off.
 
+**CodeQL analyses Rust whether or not we ask it to.** The matrix names
+`javascript-typescript` and `actions`; since the v4 action, Rust results appear
+anyway. The first run produced 14 alerts — 3 of them "critical" — and every
+single one was wrong: a closing brace, two struct field initialisers, a doc
+comment, a `println!` of a literal, test fixtures, and a `tauri::Builder`
+chain. CodeQL's Rust taint tracking is new and currently keys on identifiers
+named `password`, `secret` or `pin` and flags anything printed nearby.
+
+They are dismissed individually, each with a written reason, rather than by
+switching the analysis off: the support will mature, and this is a codebase
+where it should eventually earn its place. Note that excluding test code by
+path does not work here — Rust keeps its tests in `#[cfg(test)]` modules inside
+the production files, which `paths-ignore` cannot reach.
+
+If a future run produces a wave of Rust alerts, read them before believing
+them, and read them before dismissing them.
+
 **CI installs the toolchain on `ubuntu-24.04` instead of reusing the Arch
 `Containerfile`** that local builds use. The container exists so the binary
 links like the Arch/CachyOS host it is developed on; CI only needs to know the
