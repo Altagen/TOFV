@@ -128,6 +128,34 @@ SHA-256 fingerprint and asks before pinning it.
 
 **Afterwards.** Tray → Connect → type the code → connected.
 
+### The password and your keyring
+
+You type the VPN password **once**. "Store in keyring" hands it to your
+desktop's Secret Service daemon — KWallet, gnome-keyring, KeePassXC, whatever
+you already use — and TOFV forgets it. The input then disappears and the panel
+shows what is stored instead, so an empty form is never ambiguous:
+
+- **Replace** brings the input back, to store a new password.
+- **Forget** deletes the entry from the keyring. Connect will refuse until you
+  store one again.
+
+TOFV never writes the password to disk itself, and never passes it on a
+command line. At connect time root `openfortivpn` asks `pinentry-tofv` for it,
+which fetches it from your session over a `0600` socket.
+
+The entry is a normal keyring item, so you can inspect or delete it with your
+own tools — look for service `dev.tofv`, account `default`:
+
+```sh
+secret-tool lookup service dev.tofv username default   # prints it
+secret-tool clear  service dev.tofv username default   # same as Forget
+```
+
+In KWalletManager or Seahorse it appears as *TOFV password (default)*.
+
+If your keyring is locked when you click Connect, your desktop will prompt to
+unlock it — that prompt comes from the wallet, not from TOFV.
+
 **Certificate rotation.** If the gateway's certificate changes, TOFV reopens
 the trust dialog with the old and new fingerprints side by side instead of
 failing silently.

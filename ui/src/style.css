@@ -480,6 +480,34 @@ input:focus {
   border-color: var(--amber);
 }
 
+/* The password field is state-driven: an input while nothing is stored,
+   a status line with Replace / Forget once it is in the keyring. */
+.field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stored-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stored-row[hidden],
+.field-row[hidden] {
+  display: none;
+}
+
+.stored-label {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ok);
+}
+
 .field-row {
   display: flex;
   gap: 8px;

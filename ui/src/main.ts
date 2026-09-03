@@ -78,6 +78,29 @@ const labels: Record<UiStatus, string> = {
   error: "error",
 };
 
+// The password is write-only: it goes to the keyring and is never read back
+// into the form. Showing an empty input in both states made "stored" and
+// "not stored" look identical, so the field only exists while there is
+// nothing stored, or while the user asked to replace it.
+let replacingPassword = false;
+
+function renderPassword(hasPassword: boolean) {
+  const stored = hasPassword && !replacingPassword;
+  $("pass-entry").hidden = stored;
+  $("pass-stored").hidden = !stored;
+  if (stored) {
+    $("pass-stored-label").textContent = "Stored in your keyring (dev.tofv / default)";
+    $("pass-state").textContent =
+      "Connect reads it from the keyring. TOFV never writes it to disk.";
+    $("pass-state").classList.remove("error");
+    return;
+  }
+  $("pass-state").textContent = hasPassword
+    ? "Type a new password to replace the stored one."
+    : "Stored once in your desktop keyring. TOFV never writes it to disk.";
+  $("pass-state").classList.remove("error");
+}
+
 function render(s: Snapshot) {
   const led = $("led");
   led.className = `led ${s.status}`;
@@ -89,9 +112,7 @@ function render(s: Snapshot) {
   ($("username") as HTMLInputElement).value = s.profile.username;
   ($("realm") as HTMLInputElement).value = s.profile.realm;
   ($("trusted") as HTMLInputElement).value = s.profile.trustedCert ?? "";
-  $("pass-state").textContent = s.profile.hasPassword
-    ? "stored in the keyring"
-    : "not stored";
+  renderPassword(s.profile.hasPassword);
 
   applyDoctor(s.doctor);
 
@@ -212,9 +233,11 @@ async function doConnect(otp: string) {
 }
 
 function needPassword() {
-  toast("No password in the keyring — type one, then click Keyring.");
-  $("pass-state").textContent =
-    "no password — type one and click Keyring";
+  toast("No password in the keyring — type one, then Store in keyring.");
+  replacingPassword = true;
+  renderPassword(false);
+  $("pass-state").textContent = "Connect needs a stored password.";
+  $("pass-state").classList.add("error");
   ($("password") as HTMLInputElement).focus();
 }
 
@@ -236,11 +259,6 @@ window.addEventListener("DOMContentLoaded", async () => {
           trustedCert: ($("trusted") as HTMLInputElement).value || null,
         },
       });
-      const pass = ($("password") as HTMLInputElement).value;
-      if (pass) {
-        await invoke("save_password", { password: pass });
-        ($("password") as HTMLInputElement).value = "";
-      }
       await invoke("preview");
       await refresh();
     } catch (err) {
@@ -251,16 +269,39 @@ window.addEventListener("DOMContentLoaded", async () => {
   $("btn-save-pass").addEventListener("click", async () => {
     const input = $("password") as HTMLInputElement;
     if (!input.value) {
-      $("pass-state").textContent = "saisis le mot de passe VPN, puis Trousseau";
+      $("pass-state").textContent = "Type the VPN password first.";
+      $("pass-state").classList.add("error");
       input.focus();
       return;
     }
     try {
       await invoke("save_password", { password: input.value });
       input.value = "";
+      replacingPassword = false;
       await refresh();
     } catch (err) {
       $("pass-state").textContent = String(err);
+      $("pass-state").classList.add("error");
+      pushTail(`tofv: ${err}`);
+    }
+  });
+
+  $("btn-replace-pass").addEventListener("click", () => {
+    replacingPassword = true;
+    renderPassword(true);
+    ($("password") as HTMLInputElement).focus();
+  });
+
+  $("btn-forget-pass").addEventListener("click", async () => {
+    try {
+      await invoke("clear_password");
+      replacingPassword = false;
+      ($("password") as HTMLInputElement).value = "";
+      await refresh();
+      pushTail("tofv: password removed from the keyring");
+    } catch (err) {
+      $("pass-state").textContent = String(err);
+      $("pass-state").classList.add("error");
       pushTail(`tofv: ${err}`);
     }
   });

@@ -110,14 +110,19 @@
             Username
             <input id="username" name="username" autocomplete="username" required />
           </label>
-          <label class="span-2">
-            Password
-            <span class="field-row">
+          <div class="span-2 field-block">
+            <label for="password">Password</label>
+            <div id="pass-entry" class="field-row">
               <input id="password" name="password" type="password" autocomplete="new-password" />
-              <button id="btn-save-pass" class="btn" type="button">Keyring</button>
-            </span>
-            <small id="pass-state" class="hint">not stored — saving the profile also puts it in the keyring</small>
-          </label>
+              <button id="btn-save-pass" class="btn" type="button">Store in keyring</button>
+            </div>
+            <div id="pass-stored" class="stored-row" hidden>
+              <span id="pass-stored-label" class="stored-label"></span>
+              <button id="btn-replace-pass" class="btn ghost" type="button">Replace</button>
+              <button id="btn-forget-pass" class="btn ghost" type="button">Forget</button>
+            </div>
+            <small id="pass-state" class="hint"></small>
+          </div>
           <label class="span-2">
             trusted-cert
             <input id="trusted" name="trusted" spellcheck="false" placeholder="SHA-256 (64 hex)" />
