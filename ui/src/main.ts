@@ -101,6 +101,16 @@ function renderPassword(hasPassword: boolean) {
   $("pass-state").classList.remove("error");
 }
 
+// Preview is meaningless while a session is live: the command block is then
+// showing the real invocation, and the backend refuses to overwrite it.
+function setPreviewEnabled(enabled: boolean) {
+  const btn = $("btn-preview") as HTMLButtonElement;
+  btn.disabled = !enabled;
+  btn.title = enabled
+    ? "Show the exact command and redacted config TOFV would run, without connecting"
+    : "Not available while a session is running — the command shown is the real one";
+}
+
 function render(s: Snapshot) {
   const led = $("led");
   led.className = `led ${s.status}`;
@@ -135,6 +145,7 @@ function render(s: Snapshot) {
   ($("btn-connect") as HTMLButtonElement).disabled = busy;
   ($("btn-disconnect") as HTMLButtonElement).disabled =
     s.status === "idle" || s.status === "disconnecting";
+  setPreviewEnabled(!busy);
 
   if (s.needCert) {
     showCertModal(s.needCert, s.profile.trustedCert);
@@ -400,6 +411,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     ($("btn-connect") as HTMLButtonElement).disabled = busy;
     ($("btn-disconnect") as HTMLButtonElement).disabled =
       ev.payload === "idle" || ev.payload === "disconnecting";
+    setPreviewEnabled(!busy);
     if (ev.payload === "auth-failed" && !$("modal-otp").hidden) {
       openOtp(
         "Code rejected. The token rotates about every 60 s — enter the code shown right now.",

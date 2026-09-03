@@ -388,7 +388,17 @@ fn clear_password() -> Result<(), String> {
 
 #[tauri::command]
 fn preview(state: State<'_, AppState>) -> Result<UiSnapshot, String> {
-    refresh_preview(&state, "000000")?;
+    // While a session is live, `command` holds what is actually running and
+    // the panel labels it that way. Overwriting it with a hypothetical
+    // invocation would put a command that is not running under a
+    // "command running" heading.
+    let live = matches!(
+        *state.status.lock().map_err(|e| e.to_string())?,
+        UiStatus::Connecting | UiStatus::Up | UiStatus::Disconnecting
+    );
+    if !live {
+        refresh_preview(&state, "000000")?;
+    }
     get_state(state)
 }
 
