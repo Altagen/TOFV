@@ -23,7 +23,12 @@ use tofv_core::{
 const MAX_LOGS: usize = 400;
 /// Caps log events at ~20/s; invisible to a reader, decisive for the webview.
 const LOG_BATCH_WINDOW: Duration = Duration::from_millis(50);
-const TRAY_ICON_PNG: &[u8] = include_bytes!("../icons/32x32.png");
+// Three tray states, derived from the same mark. The icon was previously
+// static and only the tooltip changed, so the one question a tray daemon
+// exists to answer — am I connected? — needed a hover to answer.
+const TRAY_ICON_IDLE: &[u8] = include_bytes!("../icons/tray-idle.png");
+const TRAY_ICON_CONNECTING: &[u8] = include_bytes!("../icons/tray-connecting.png");
+const TRAY_ICON_CONNECTED: &[u8] = include_bytes!("../icons/tray-connected.png");
 const WINDOW_ICON_PNG: &[u8] = include_bytes!("../icons/128x128.png");
 const AUTH_RETRY_MSG: &str =
     "Code rejected. The token rotates about every 60 s — enter the code shown right now.";
@@ -132,6 +137,20 @@ fn doctor_view() -> DoctorReport {
     doctor_report()
 }
 
+/// Grey while there is no tunnel, grey with an amber dot while one is being
+/// negotiated, full colour once it is up.
+fn tray_icon_for(status: UiStatus) -> &'static [u8] {
+    match status {
+        UiStatus::Up => TRAY_ICON_CONNECTED,
+        UiStatus::Connecting | UiStatus::Disconnecting => TRAY_ICON_CONNECTING,
+        // NeedCert, AuthFailed and Error are all "no tunnel" as far as the
+        // icon is concerned; the tooltip carries the detail.
+        UiStatus::Idle | UiStatus::NeedCert | UiStatus::AuthFailed | UiStatus::Error => {
+            TRAY_ICON_IDLE
+        }
+    }
+}
+
 fn emit_status(app: &tauri::AppHandle, state: &AppState, status: UiStatus) {
     if let Ok(mut slot) = state.status.lock() {
         *slot = status;
@@ -148,6 +167,9 @@ fn emit_status(app: &tauri::AppHandle, state: &AppState, status: UiStatus) {
             UiStatus::Error => "TOFV — error",
         };
         let _ = tray.set_tooltip(Some(label));
+        if let Ok(icon) = Image::from_bytes(tray_icon_for(status)) {
+            let _ = tray.set_icon(Some(icon));
+        }
     }
     if status == UiStatus::Up {
         hide_otp(app);
@@ -854,7 +876,7 @@ fn main() {
                     MenuItem::with_id(app, "disconnect", "Disconnect", true, None::<&str>)?;
                 let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
                 let menu = Menu::with_items(app, &[&open, &connect, &disconnect, &quit])?;
-                let icon = Image::from_bytes(TRAY_ICON_PNG)?;
+                let icon = Image::from_bytes(TRAY_ICON_IDLE)?;
                 TrayIconBuilder::with_id("main")
                     .icon(icon)
                     .tooltip("TOFV — disconnected")
