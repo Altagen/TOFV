@@ -29,12 +29,6 @@ function paint() {
   });
 }
 
-function pushLine(line: string) {
-  lines.push(line);
-  if (lines.length > MAX) lines.splice(0, lines.length - MAX);
-  paint();
-}
-
 window.addEventListener("DOMContentLoaded", async () => {
   bindChrome("destroy");
 
@@ -57,5 +51,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("full-log").textContent = String(err);
   }
 
-  await listen<string>("tofv://log", (ev) => pushLine(ev.payload));
+  await listen<string[]>("tofv://log", (ev) => {
+    lines.push(...ev.payload);
+    if (lines.length > MAX) lines.splice(0, lines.length - MAX);
+    paint();
+  });
 });

@@ -334,8 +334,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  await listen<string>("tofv://log", (ev) => {
-    pushTail(ev.payload);
+  await listen<string[]>("tofv://log", (ev) => {
+    for (const line of ev.payload) tail.push(line);
+    if (tail.length > TAIL) tail = tail.slice(-TAIL);
+    paintTail();
   });
   await listen<UiStatus>("tofv://status", (ev) => {
     const led = $("led");

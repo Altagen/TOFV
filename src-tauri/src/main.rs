@@ -21,6 +21,8 @@ use tofv_core::{
 };
 
 const MAX_LOGS: usize = 400;
+/// Caps log events at ~20/s; invisible to a reader, decisive for the webview.
+const LOG_BATCH_WINDOW: Duration = Duration::from_millis(50);
 const TRAY_ICON_PNG: &[u8] = include_bytes!("../icons/32x32.png");
 const WINDOW_ICON_PNG: &[u8] = include_bytes!("../icons/128x128.png");
 const AUTH_RETRY_MSG: &str =
@@ -153,13 +155,33 @@ fn emit_status(app: &tauri::AppHandle, state: &AppState, status: UiStatus) {
 }
 
 fn push_log(app: &tauri::AppHandle, state: &AppState, line: String) {
-    if let Ok(mut logs) = state.logs.lock() {
-        if logs.len() >= MAX_LOGS {
-            logs.pop_front();
-        }
-        logs.push_back(line.clone());
+    push_logs(app, state, vec![line]);
+}
+
+/// One IPC round trip per batch, not per line.
+///
+/// `openfortivpn -v` emits a line per packet once the tunnel is up. Emitting
+/// each one separately serialises a message and wakes the webview thousands
+/// of times a second, for a view that only ever shows the last `MAX_LOGS`
+/// lines. This cannot stall the tunnel — the channel feeding it is unbounded
+/// — but it burns a core for nothing.
+fn push_logs(app: &tauri::AppHandle, state: &AppState, mut lines: Vec<String>) {
+    if lines.is_empty() {
+        return;
     }
-    let _ = app.emit("tofv://log", line);
+    // The UI keeps a tail; anything older in this batch is already invisible.
+    if lines.len() > MAX_LOGS {
+        lines.drain(..lines.len() - MAX_LOGS);
+    }
+    if let Ok(mut logs) = state.logs.lock() {
+        for line in &lines {
+            if logs.len() >= MAX_LOGS {
+                logs.pop_front();
+            }
+            logs.push_back(line.clone());
+        }
+    }
+    let _ = app.emit("tofv://log", lines);
 }
 
 fn adopt_live_tunnel(app: &tauri::AppHandle, state: &AppState) -> bool {
@@ -490,9 +512,14 @@ fn start_session(
     }
     let app_logs = app.clone();
     thread::spawn(move || {
-        for line in logs {
+        // Block for the first line, then let a short window fill up before
+        // draining, so a burst becomes one event instead of thousands.
+        while let Ok(first) = logs.recv() {
+            thread::sleep(LOG_BATCH_WINDOW);
+            let mut batch = vec![first];
+            batch.extend(logs.try_iter());
             let state = app_logs.state::<AppState>();
-            push_log(&app_logs, &state, line);
+            push_logs(&app_logs, &state, batch);
         }
     });
     Ok(())
