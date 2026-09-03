@@ -36,7 +36,7 @@ pub fn percent_decode(input: &str) -> Result<String> {
     let mut out = Vec::with_capacity(bytes.len());
     let mut i = 0;
     while i < bytes.len() {
-        if bytes[i] == b'%' && i + 2 <= bytes.len() - 1 {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
             let h = u8::from_str_radix(std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or(""), 16)
                 .map_err(|_| Error::PinentrySocket("invalid percent-encoding".into()))?;
             out.push(h);
@@ -132,9 +132,7 @@ impl PinentryServer {
                         match peer_uid(&stream) {
                             Some(peer) if peer == us || peer == 0 => {}
                             other => {
-                                eprintln!(
-                                    "tofv pinentry socket: refusing peer uid {other:?}"
-                                );
+                                eprintln!("tofv pinentry socket: refusing peer uid {other:?}");
                                 let _ = writeln!(&stream, "ERR forbidden");
                                 continue;
                             }
@@ -280,7 +278,11 @@ mod tests {
                 "wire format must stay ASCII: {encoded:?}"
             );
             assert!(!encoded.contains('\n') && !encoded.contains('\r'));
-            assert_eq!(percent_decode(&encoded).unwrap(), pw, "round trip for {pw:?}");
+            assert_eq!(
+                percent_decode(&encoded).unwrap(),
+                pw,
+                "round trip for {pw:?}"
+            );
         }
     }
 

@@ -92,8 +92,6 @@ struct ProfilePatch {
     trusted_cert: Option<String>,
 }
 
-
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct UiSnapshot {
@@ -240,7 +238,11 @@ fn show_otp_prompt(app: &tauri::AppHandle, retry_msg: Option<&str>) {
             show_panel(app);
             let _ = app.emit("tofv://ask-otp-fallback", retry_msg.unwrap_or(""));
             let state = app.state::<AppState>();
-            push_log(app, &state, format!("tofv: OTP window: {e} — falling back to the panel modal"));
+            push_log(
+                app,
+                &state,
+                format!("tofv: OTP window: {e} — falling back to the panel modal"),
+            );
         }
     }
 }
@@ -610,20 +612,12 @@ fn apply_outcome(app: &tauri::AppHandle, state: &AppState, outcome: ConnectOutco
                     format!("tofv: certificate rotation\n  old {old}\n  new {sha256}"),
                 );
             } else {
-                push_log(
-                    app,
-                    state,
-                    format!("tofv: unknown certificate {sha256}"),
-                );
+                push_log(app, state, format!("tofv: unknown certificate {sha256}"));
             }
         }
         ConnectOutcome::CertRejected => {
             let probed = state.cert_probe.lock().ok().is_some_and(|g| *g);
-            let otp = state
-                .pending_otp
-                .lock()
-                .ok()
-                .and_then(|g| g.clone());
+            let otp = state.pending_otp.lock().ok().and_then(|g| g.clone());
             let had_pin = load_profile(&state.paths)
                 .ok()
                 .and_then(|p| p.trusted_cert)

@@ -78,7 +78,11 @@ fn start(uid: u32, config: &Path) -> Result<(), String> {
     let safe_conf = write_root_file(&dir.join("session.conf"), body.as_bytes(), 0o600)?;
 
     let pid_path = dir.join("vpn.pid");
-    write_root_file(&pid_path, format!("{}\n", std::process::id()).as_bytes(), 0o600)?;
+    write_root_file(
+        &pid_path,
+        format!("{}\n", std::process::id()).as_bytes(),
+        0o600,
+    )?;
 
     let err = Command::new(&vpn)
         .arg("-c")
@@ -213,13 +217,10 @@ fn write_root_pinentry(path: &Path, bin: &Path, uid: u32) -> Result<(), String> 
 }
 
 fn is_root() -> bool {
-    fs::read_to_string("/proc/self/status")
-        .ok()
-        .and_then(|s| {
-            s.lines()
-                .find(|l| l.starts_with("Uid:"))
-                .and_then(|l| l.split_whitespace().nth(1))
-                .and_then(|v| v.parse::<u32>().ok())
-        })
-        == Some(0)
+    fs::read_to_string("/proc/self/status").ok().and_then(|s| {
+        s.lines()
+            .find(|l| l.starts_with("Uid:"))
+            .and_then(|l| l.split_whitespace().nth(1))
+            .and_then(|v| v.parse::<u32>().ok())
+    }) == Some(0)
 }

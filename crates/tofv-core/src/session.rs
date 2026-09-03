@@ -118,8 +118,10 @@ mod tests {
             username: "alice".into(),
             ..Profile::default()
         };
-        let mut cfg = AppConfig::default();
-        cfg.openfortivpn = Some(PathBuf::from("/usr/bin/openfortivpn"));
+        let mut cfg = AppConfig {
+            openfortivpn: Some(PathBuf::from("/usr/bin/openfortivpn")),
+            ..Default::default()
+        };
 
         // resolve_openfortivpn requires the file to exist; skip if missing.
         if !Path::new("/usr/bin/openfortivpn").is_file()

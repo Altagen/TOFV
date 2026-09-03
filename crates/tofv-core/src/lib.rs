@@ -15,10 +15,10 @@ mod runner;
 mod secret;
 mod session;
 
-pub use live::{probe_live_tunnel, LiveTunnel};
-pub use doctor::{appindicator_available, report as doctor_report, DoctorItem, DoctorReport};
 pub use command::{plan_connect, PlanRequest, PlannedInvocation};
+pub use doctor::{appindicator_available, report as doctor_report, DoctorItem, DoctorReport};
 pub use error::{Error, Result};
+pub use live::{probe_live_tunnel, LiveTunnel};
 pub use openfortivpn_conf::render as render_openfortivpn_config;
 pub use parse::{
     looks_auth_failed, looks_cert_failed, looks_tunnel_up, parse_openfortivpn_output, CertFinding,

@@ -182,13 +182,15 @@ pub fn validate_config_body(body: &str) -> Result<(), String> {
 fn validate_value(key: &str, value: &str) -> Result<(), String> {
     match key {
         "host" => {
-            if value.chars().any(|c| c.is_whitespace() || c == '/' || c == '=') {
+            if value
+                .chars()
+                .any(|c| c.is_whitespace() || c == '/' || c == '=')
+            {
                 return Err("invalid host".into());
             }
-            if !value
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | ':' | '[' | ']'))
-            {
+            if !value.chars().all(|c| {
+                c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | ':' | '[' | ']')
+            }) {
                 return Err("invalid host".into());
             }
         }
@@ -199,7 +201,10 @@ fn validate_value(key: &str, value: &str) -> Result<(), String> {
             }
         }
         "username" | "realm" => {
-            if value.chars().any(|c| c.is_control() || c == '=' || c.is_whitespace()) {
+            if value
+                .chars()
+                .any(|c| c.is_control() || c == '=' || c.is_whitespace())
+            {
                 return Err(format!("invalid {key}"));
             }
         }
@@ -213,10 +218,8 @@ fn validate_value(key: &str, value: &str) -> Result<(), String> {
                 return Err("otp must be 6 digits".into());
             }
         }
-        "no-ftm-push" => {
-            if value != "1" {
-                return Err("no-ftm-push must be 1".into());
-            }
+        "no-ftm-push" if value != "1" => {
+            return Err("no-ftm-push must be 1".into());
         }
         _ => {}
     }
@@ -232,10 +235,7 @@ pub fn allowed_openfortivpn(path: &Path) -> Result<PathBuf, String> {
         Some("/usr/bin/openfortivpn") | Some("/usr/local/bin/openfortivpn")
     );
     if !ok {
-        return Err(format!(
-            "refusing openfortivpn path {}",
-            canon.display()
-        ));
+        return Err(format!("refusing openfortivpn path {}", canon.display()));
     }
     let meta = fs::metadata(&canon).map_err(|e| e.to_string())?;
     if meta.uid() != 0 {
@@ -258,8 +258,7 @@ fn cmdline_belongs_to_tofv(cmdline: &[u8], uid: u32) -> bool {
         .collect::<Vec<_>>()
         .join(&b" "[..]);
     let hay = String::from_utf8_lossy(&hay);
-    hay.contains(&format!("/run/user/{uid}/tofv/"))
-        || hay.contains(&format!("/run/tofv/{uid}/"))
+    hay.contains(&format!("/run/user/{uid}/tofv/")) || hay.contains(&format!("/run/tofv/{uid}/"))
 }
 
 fn scan_proc(uid: u32) -> Option<u32> {
@@ -354,10 +353,22 @@ mod tests {
 
     #[test]
     fn rejects_bad_values() {
-        assert!(validate_config_body("host = vpn/../etc\nport = 443\nusername = a\notp = 123456\nno-ftm-push = 1\n").is_err());
-        assert!(validate_config_body("host = vpn.example.com\nport = 0\nusername = a\notp = 123456\nno-ftm-push = 1\n").is_err());
-        assert!(validate_config_body("host = vpn.example.com\nport = 443\nusername = a\notp = 12\nno-ftm-push = 1\n").is_err());
-        assert!(validate_config_body("host = vpn.example.com\nport = 443\nusername = a\notp = 123456\nno-ftm-push = 0\n").is_err());
+        assert!(validate_config_body(
+            "host = vpn/../etc\nport = 443\nusername = a\notp = 123456\nno-ftm-push = 1\n"
+        )
+        .is_err());
+        assert!(validate_config_body(
+            "host = vpn.example.com\nport = 0\nusername = a\notp = 123456\nno-ftm-push = 1\n"
+        )
+        .is_err());
+        assert!(validate_config_body(
+            "host = vpn.example.com\nport = 443\nusername = a\notp = 12\nno-ftm-push = 1\n"
+        )
+        .is_err());
+        assert!(validate_config_body(
+            "host = vpn.example.com\nport = 443\nusername = a\notp = 123456\nno-ftm-push = 0\n"
+        )
+        .is_err());
         assert!(validate_config_body("host = vpn.example.com\nport = 443\nusername = a\ntrusted-cert = deadbeef\notp = 123456\nno-ftm-push = 1\n").is_err());
     }
 

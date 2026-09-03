@@ -239,7 +239,13 @@ fn doctor(paths: &AppPaths) -> tofv_core::Result<()> {
 
     let report = tofv_core::doctor_report();
     for item in &report.items {
-        let mark = if item.ok { "ok" } else if item.blocking { "MISSING" } else { "warn" };
+        let mark = if item.ok {
+            "ok"
+        } else if item.blocking {
+            "MISSING"
+        } else {
+            "warn"
+        };
         println!("{:<12} [{mark}] {}", item.label, item.detail);
     }
     println!();

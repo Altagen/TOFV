@@ -55,11 +55,7 @@ pub fn detect_ppp_iface() -> Option<String> {
 }
 
 fn read_pid_file(path: &Path) -> Option<u32> {
-    fs::read_to_string(path)
-        .ok()?
-        .trim()
-        .parse()
-        .ok()
+    fs::read_to_string(path).ok()?.trim().parse().ok()
 }
 
 fn scan_proc_for_tofv(uid: u32) -> Option<u32> {
@@ -101,7 +97,10 @@ mod tests {
         let cmd = b"openfortivpn\0-c\0/run/user/1000/tofv/default.conf\0-v\0--no-ftm-push\0";
         assert!(cmdline_belongs_to_tofv(cmd, 1000));
         assert!(!cmdline_belongs_to_tofv(cmd, 1001));
-        assert!(!cmdline_belongs_to_tofv(b"openfortivpn\0vpn.example.com\0", 1000));
+        assert!(!cmdline_belongs_to_tofv(
+            b"openfortivpn\0vpn.example.com\0",
+            1000
+        ));
         let root = b"openfortivpn\0-c\0/run/tofv/1000/session.conf\0";
         assert!(cmdline_belongs_to_tofv(root, 1000));
         assert!(!cmdline_belongs_to_tofv(root, 1001));

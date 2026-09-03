@@ -342,7 +342,9 @@ fn stop_vpn_process(pid: u32) {
 pub fn disconnect(paths: &AppPaths) -> Result<bool> {
     let helper_ok = helper_stop();
     let pid_path = paths.session_pid_path();
-    let leftover = fs::read_to_string(&pid_path).ok().and_then(|t| t.trim().parse::<u32>().ok());
+    let leftover = fs::read_to_string(&pid_path)
+        .ok()
+        .and_then(|t| t.trim().parse::<u32>().ok());
     if helper_ok {
         let _ = fs::remove_file(&pid_path);
         return Ok(true);
@@ -555,7 +557,11 @@ exit 0
         let _ = fs::remove_dir_all(&root);
 
         assert_eq!(outcome, ConnectOutcome::ExitedAfterUp { code: Some(0) });
-        assert_eq!(logs.try_iter().count(), LINES + 1, "lines must still reach the UI");
+        assert_eq!(
+            logs.try_iter().count(),
+            LINES + 1,
+            "lines must still reach the UI"
+        );
         // The quadratic version needed ~30s for this; O(1) needs well under one.
         assert!(
             elapsed < Duration::from_secs(10),

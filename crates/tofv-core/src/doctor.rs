@@ -50,9 +50,7 @@ pub fn detect_distro() -> Distro {
         "arch" | "cachyos" | "manjaro" | "endeavouros" | "garuda" => Distro::Arch,
         "debian" | "ubuntu" | "linuxmint" | "pop" | "elementary" => Distro::Debian,
         _ => {
-            if text.contains("arch") {
-                Distro::Arch
-            } else if Path::new("/usr/bin/pacman").is_file() {
+            if text.contains("arch") || Path::new("/usr/bin/pacman").is_file() {
                 Distro::Arch
             } else if Path::new("/usr/bin/apt-get").is_file() {
                 Distro::Debian
@@ -67,10 +65,7 @@ pub fn find_bin(name: &str, extras: &[&str]) -> Option<PathBuf> {
     if let Some(p) = which(name) {
         return Some(p);
     }
-    extras
-        .iter()
-        .map(PathBuf::from)
-        .find(|p| p.is_file())
+    extras.iter().map(PathBuf::from).find(|p| p.is_file())
 }
 
 pub fn appindicator_available() -> bool {
@@ -169,8 +164,9 @@ pub fn report() -> DoctorReport {
             ok: false,
             blocking: true,
             label: "helper".into(),
-            detail: "not installed — Connect refuses to run openfortivpn as root. ./scripts/install.sh"
-                .into(),
+            detail:
+                "not installed — Connect refuses to run openfortivpn as root. ./scripts/install.sh"
+                    .into(),
         });
         false
     };
@@ -215,20 +211,6 @@ pub fn report() -> DoctorReport {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn report_lists_core_checks() {
-        let r = report();
-        for id in ["openfortivpn", "pppd", "secret-tool", "pkexec", "helper", "tray"] {
-            assert!(r.items.iter().any(|i| i.id == id), "missing {id}");
-        }
-        assert!(!r.install_cmd.is_empty());
-    }
-}
-
 fn item(id: &str, is_ok: bool, blocking: bool, detail: String) -> DoctorItem {
     DoctorItem {
         id: id.into(),
@@ -236,5 +218,26 @@ fn item(id: &str, is_ok: bool, blocking: bool, detail: String) -> DoctorItem {
         blocking,
         label: id.into(),
         detail,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn report_lists_core_checks() {
+        let r = report();
+        for id in [
+            "openfortivpn",
+            "pppd",
+            "secret-tool",
+            "pkexec",
+            "helper",
+            "tray",
+        ] {
+            assert!(r.items.iter().any(|i| i.id == id), "missing {id}");
+        }
+        assert!(!r.install_cmd.is_empty());
     }
 }
