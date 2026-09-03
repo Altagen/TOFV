@@ -1,168 +1,167 @@
-# Backlog TOFV
+# TOFV backlog
 
-Priorités :
+Priorities:
 
-| Tag | Sens |
+| Tag | Meaning |
 | --- | --- |
-| **P0** | Douleur du quotidien, à faire ensuite |
-| **P1** | Gros gain UX / sécu, une fois P0 calé |
-| **P2** | Produit « vrai client VPN » (profils, paquet) |
-| **P3** | Plus tard / autre plateforme |
-| **Won't** | Hors scope volontaire |
+| **P0** | Daily friction, do next |
+| **P1** | Large UX / security win, once P0 is settled |
+| **P2** | "Real VPN client" territory (profiles, packaging) |
+| **P3** | Later, or another platform |
+| **Won't** | Deliberately out of scope |
 
-Effort : S (heures), M (1–3 jours), L (semaine+).
-
----
-
-## Déjà en place (ne pas replanifier)
-
-- Wrapper `openfortivpn` (pas de réimplémentation du protocole)
-- Profil unique disque + mot de passe via **Secret Service** (`secret-tool` / libsecret : KWallet, gnome-keyring, …)
-- TOTP 6 chiffres **saisi** (F121 / FortiToken), config éphémère `0600`, jamais de secret en argv
-- Pinning `trusted-cert` + parse d’erreur openfortivpn
-- Helper de commande redactée + journal (10 lignes dans le panneau, fenêtre dédiée)
-- `tofv-helper` + Polkit `allow_active=yes` (Connect/Couper sans sudo, **après** `install-helper.sh`)
-- UI Tauri : chrome custom, header tofu + LED figés, taille mini 720×560
-- Reprise d’un tunnel orphelin (`ppp0` / pid helper) après kill de l’UI
-- Élévation : UI jamais root
-- Build Podman (Arch) + `./scripts/build-app.sh`
-- Logo / icônes RGBA + `.desktop` / hicolor via `scripts/install-desktop.sh`
-- Rotation `trusted-cert` : retry sans pin, comparer SHA, épingler et reconnecter (nouveau TOTP)
-- Doctor (CLI `tofv doctor` + écran bloquant) + `scripts/install.sh` (release, helper, PATH)
-- Trousseau **Secret Service** (agnostique KDE/GNOME), pas KWallet en dur
-- Instance unique (socket) + détache du TTY (`tofv-app` ne garde pas le terminal)
-- Autostart XDG `--tray` (install-desktop + `/etc/xdg/autostart` du paquet)
-- `.desktop` `Terminal=false` : double-clic sans terminal
-- Connect tray / panneau → fenêtre TOTP (pas le panneau) ; auth fail → nouveau code tout de suite
-- Audit sécu H1–H3 : conf recopié root (anti-TOCTOU), plus de `pkexec /bin/sh`, pas d’`openfortivpn` brut en pkexec
+Effort: S (hours), M (1–3 days), L (a week or more).
 
 ---
 
-## P0 — boucler le flux quotidien
+## Already in place (do not re-plan)
 
-| ID | Item | Effort | Pourquoi |
+- Wraps `openfortivpn`; the protocol is not reimplemented
+- Single on-disk profile, password in **Secret Service** (`secret-tool` / libsecret: KWallet, gnome-keyring, …)
+- 6-digit code **typed by hand**, ephemeral `0600` config, no secret ever in argv
+- `trusted-cert` pinning plus openfortivpn error parsing
+- Redacted command view and log (tail in the panel, dedicated window)
+- `tofv-helper` + Polkit `allow_active=yes` (Connect/Disconnect without sudo, **after** `install-helper.sh`)
+- Tauri UI: custom chrome, fixed header and LED, 720×560 minimum size
+- Adopts an orphaned tunnel (`ppp0` / helper pid) after the UI is killed
+- Elevation: the UI is never root
+- Podman build (Arch) plus `./scripts/build-app.sh`
+- Logo / RGBA icons, `.desktop` and hicolor via `scripts/install-desktop.sh`
+- `trusted-cert` rotation: retry unpinned, compare the SHA, pin and reconnect
+- Doctor (`tofv doctor` CLI plus a blocking first-run screen) and `scripts/install.sh`
+- Single instance (socket) and TTY detach — `tofv-app` does not hold the terminal
+- XDG autostart with `--tray`, `.desktop` with `Terminal=false`
+- Connect from tray or panel opens the code window; auth failure asks for a fresh code immediately
+- Constant-time log ingestion: `openfortivpn -v` logs one line per packet, and
+  a quadratic parser used to stall the pipe and freeze the tunnel
+- Helper reads and validates the config on one file descriptor (`O_NOFOLLOW`
+  plus `fstat`), so the path cannot be swapped between check and read
+- Rejection messages never echo file content, only line numbers
+- Pinentry socket checks the peer uid (`SO_PEERCRED`) and caps how many times
+  it will hand out the password
+
+---
+
+## P0 — close the daily loop
+
+| ID | Item | Effort | Why |
 | --- | --- | --- | --- |
-| P0-1 | **Tray StatusNotifier fiable** : `libayatana-appindicator`, icône connecté/déconnecté (tooltip déjà là), menu Connect / Couper / Ouvrir / Quitter, clic gauche = panneau | M | Sans la lib le panneau s’ouvre tout seul ; le contrat « daemon barre de tâches » n’est pas tenu |
-| P0-2 | **Autostart XDG** — tray seulement, **pas** d’autoconnect | S | Fait (`install-desktop.sh` + PKGBUILD `/etc/xdg/autostart`) |
-| P0-3 | **First-run / doctor bloquant** | M | Fait (`tofv doctor` + écran UI) |
-| P0-4 | **Connect depuis le tray** → popup TOTP + toasts si pas de mot de passe / pas de helper | S | Fait (fenêtre TOTP, pas le panneau ; toast mdp / prérequis) |
-| P0-5 | **Popup TOTP** : focus, collage, bouton hors 6 chiffres (déjà là) — peaufiner messages d’erreur F121 | S | Geste quotidien |
-| P0-6 | **Retry TOTP** : si auth fail, rouvrir la popup tout de suite | M | Fait (message F121 60 s, champ vidé, focus) |
-| P0-8 | **Journal** : « copier la commande redactée », niveaux (fenêtre + borne 400 déjà là) | S | Debug |
-| P0-9 | **État Couper** : messages si helper absent / pkexec | S | En partie fait |
-| P0-10 | **Lanceur** : `tofv-app` dans `~/.local/bin` + `.desktop` (script `install-desktop.sh` déjà là) | S | Fait ; double-clic / `tofv-app` détache du TTY |
+| P0-1 | **Reliable StatusNotifier tray**: `libayatana-appindicator`, connected/disconnected icon, Connect / Disconnect / Open / Quit menu, left click opens the panel | M | Without the library the panel opens on its own and the "tray daemon" contract is not met |
+| P0-5 | **Code prompt**: focus, paste, polish the error messages | S | The everyday gesture |
+| P0-8 | **Log**: "copy the redacted command", log levels | S | Debugging |
+| P0-9 | **Disconnect state**: clearer messages when the helper or pkexec is missing | S | Partly done |
 
 ---
 
 ## P1 — UX
 
-### UI / UX panneau
+### Panel
 
 | ID | Item | Effort |
 | --- | --- | --- |
-| P1-U1 | Distinguer **Réglages** (profil) et **Session** (connect / logs) | M |
-| P1-U2 | Masquer host/port/realm derrière « Avancé » une fois le profil OK | M |
-| P1-U3 | Notifications desktop (connecté, drop, cert changé) | S |
-| P1-U4 | Polices **locales** (plus Google Fonts) | S |
-| P1-U5 | Accessibilité : focus trap des modales (Escape déjà là), contraste LED | S |
-| P1-U6 | Confirmer l’enregistrement mot de passe (entrée `dev.tofv` dans le trousseau) | S |
-| P1-U7 | Afficher l’IP `ppp0` / passerelle une fois UP | S |
+| P1-U1 | Separate **Settings** (profile) from **Session** (connect / logs) | M |
+| P1-U2 | Hide host/port/realm behind "Advanced" once the profile is valid | M |
+| P1-U3 | Desktop notifications (connected, dropped, certificate changed) | S |
+| P1-U4 | **Bundle the fonts locally** — the UI currently fetches Google Fonts over the network, which is a privacy leak and breaks offline | S |
+| P1-U5 | Accessibility: focus trap in modals, LED contrast | S |
+| P1-U6 | Confirm the password was stored (show the `dev.tofv` keyring entry) | S |
+| P1-U7 | Show the `ppp0` address and gateway once up | S |
 
-### Prérequis & installation runtime
+### Prerequisites and runtime install
 
 | ID | Item | Effort |
 | --- | --- | --- |
-| P1-D1 | Détecter `openfortivpn` / `pppd` / `pkexec` / helper / `libayatana` + commande distro | M |
-| P1-D2 | Bouton « Installer le helper » (`pkexec` sur `install-helper.sh`) | M |
-| P1-D3 | Si helper absent : Connect **refuse** (doctor bloquant) — plus de pkexec openfortivpn | S | Fait (H3) |
-| P1-D4 | `tofv doctor` CLI = même rapport, exit ≠ 0 si bloquant | S |
+| P1-D1 | Detect `openfortivpn` / `pppd` / `pkexec` / helper / `libayatana` and print the distro command | M |
+| P1-D2 | An "Install the helper" button (`pkexec` on `install-helper.sh`) | M |
+| P1-D4 | `tofv doctor` prints the same report, non-zero exit when blocking | S |
 
 ---
 
-## P2 — profils, paquet, livraison
+## P2 — profiles, packaging, delivery
 
-### Multi-profils
-
-| ID | Item | Effort |
-| --- | --- | --- |
-| P2-P1 | Liste de profils, profil actif dans le tray | M |
-| P2-P2 | Mot de passe **par** profil (déjà le modèle keyring = id) | S |
-| P2-P3 | Dupliquer / renommer / supprimer (wipe keyring) | S |
-| P2-P4 | Import `openfortivpn` config (ignorer `password =`) | S |
-| P2-P5 | Export config **sans** secrets | S |
-
-### Packaging & livraison
+### Multiple profiles
 
 | ID | Item | Effort |
 | --- | --- | --- |
-| P2-L1 | **PKGBUILD / AUR** (CachyOS/Arch), policy Polkit avec le vrai prefix | L |
-| P2-L2 | `.deb` (Debian/Ubuntu 24.04+) | L |
-| P2-L3 | Template Polkit (`@LIBEXEC@`) | S |
-| P2-L4 | Builds **release** (`--release`), strip | S |
-| P2-L5 | CI GitHub Actions **avec le Containerfile** + artefact `tofv-VERSION-linux-x64.tar.gz` (`install-bin.sh`, README chemin 3) | M |
-| P2-L6 | Tags `vX.Y.Z`, changelog, checksums | S |
-| P2-L7 | **Pas de Flatpak unique** pour le helper (pppd) | — |
-| P2-L8 | Mise à jour du helper : réinstall policy si le path change | M |
+| P2-P1 | Profile list, active profile shown in the tray | M |
+| P2-P2 | Password **per** profile (the keyring model is already keyed by id) | S |
+| P2-P3 | Duplicate / rename / delete (wiping the keyring entry) | S |
+| P2-P4 | Import an `openfortivpn` config (ignoring `password =`) | S |
+| P2-P5 | Export the config **without** secrets | S |
 
-### Observabilité
+### Packaging and delivery
 
 | ID | Item | Effort |
 | --- | --- | --- |
-| P2-O1 | Logs persistants optionnels `~/.local/share/tofv/session.log` | S |
-| P2-O2 | `--persistent` openfortivpn + backoff visible | M |
-| P2-O3 | Health : `ppp0` disparaît → Error + notif | M |
+| P2-L1 | **PKGBUILD / AUR** (Arch, CachyOS), Polkit policy with the real prefix | L |
+| P2-L2 | `.deb` (Debian / Ubuntu 24.04+) | L |
+| P2-L4 | Release builds (`--release`), stripped | S |
+| P2-L5 | Release artifact `tofv-VERSION-linux-x64.tar.gz` with `install-bin.sh` (README path 3) | M |
+| P2-L6 | `vX.Y.Z` tags, changelog, checksums | S |
+| P2-L7 | **No single Flatpak** for the helper (pppd) | — |
+| P2-L8 | Helper upgrades: reinstall the policy when the path changes | M |
+
+### Observability
+
+| ID | Item | Effort |
+| --- | --- | --- |
+| P2-O1 | Optional persistent log at `~/.local/share/tofv/session.log` | S |
+| P2-O2 | openfortivpn `--persistent` with visible backoff | M |
+| P2-O3 | Health: `ppp0` disappears → Error plus a notification | M |
 
 ---
 
-## P3 — plus loin
+## P3 — further out
 
 | ID | Item | Effort |
 | --- | --- | --- |
-| P3-1 | SAML / `--saml-login` ou cookie `openfortivpn-webview` | L |
-| P3-2 | Certificat client PEM / PKCS#11 (YubiKey) | L |
-| P3-3 | macOS : helper SMJobBless / LaunchDaemon, Keychain | L |
-| P3-4 | Options réseau avancées (no-routes, half-internet-routes) | M |
-| P3-5 | i18n EN | S |
-| P3-6 | Thème clair / `color-scheme` Plasma | S |
+| P3-1 | SAML via `--saml-login`, or an `openfortivpn-webview` cookie | L |
+| P3-2 | Client certificate, PEM or PKCS#11 (YubiKey) | L |
+| P3-3 | macOS: SMJobBless / LaunchDaemon helper, Keychain | L |
+| P3-4 | Advanced network options (no-routes, half-internet-routes) | M |
+| P3-6 | Light theme / Plasma `color-scheme` | S |
 
 ---
 
-## Sécu / audit
+## Security / audit
 
-| ID | Item | Sévérité | Notes |
+| ID | Item | Severity | Notes |
 | --- | --- | --- | --- |
-| S-1 | **Revue helper** : whitelist, ownership 0600, pid = `openfortivpn`, pas de shell interpolé | haute | Fait : plus de `pkexec /bin/sh -c` ; élévation helper-only |
-| S-2 | Policy Polkit `allow_active=yes` : documenter ; option `auth_admin_keep` | moyenne | OK VPN perso |
-| S-3 | Socket pinentry : `0600`, unlink, pas de password en argv | haute | Déjà le design |
-| S-4 | Redact : OTP, password, `SVPNCOOKIE` dans logs **et** « copier » | haute | Corpus de logs réels |
-| S-6 | Wrapper pinentry **root** (`/run/tofv/UID/`) : pas un script user-writable | haute | Fait (`0700` root + `session.conf` root `0600`) |
-| S-7 | `install-helper.sh` : `install -m 755` root:root, dire si c’est un debug | moyenne | P2-L4 |
-| S-8 | Capabilities Tauri : revue à chaque nouvelle commande | moyenne | |
-| S-9 | Pas de `insecure-ssl` dans l’UI, jamais | haute | Déjà banni du helper |
-| S-10 | Tests d’attaque : `pppd-plugin`, path `../../etc/shadow`, pid forgé | haute | Fait (symlink hors runtime, plugin, valeurs, mode 0644) |
-| S-11 | SBOM + `cargo audit` en CI | basse | P2-L5 |
-| S-12 | Session leftover : stop au crash (reprise UI déjà là) | moyenne | |
+| S-1 | **Helper review**: allowlist, `0600` ownership, pid is `openfortivpn`, no interpolated shell | high | Done — no `pkexec /bin/sh -c`, helper-only elevation |
+| S-2 | Document the `allow_active=yes` Polkit policy; offer `auth_admin_keep` | medium | Fine for a personal VPN, needs saying out loud |
+| S-3 | Pinentry socket: `0600`, unlinked, no password in argv | high | By design |
+| S-4 | Redact the OTP, password and `SVPNCOOKIE` in the log **and** in "copy" | high | Needs a real-world log corpus to validate |
+| S-6 | The **root** pinentry wrapper (`/run/tofv/UID/`) must not be a user-writable script | high | Done (`0700` root, `session.conf` root `0600`) |
+| S-7 | `install-helper.sh`: `install -m 755` root:root, and say when it is a debug build | medium | See P2-L4 |
+| S-8 | Tauri capabilities: review on every new command | medium | |
+| S-9 | Never expose `insecure-ssl` in the UI | high | Already banned in the helper |
+| S-10 | Attack tests: `pppd-plugin`, `../../etc/shadow` paths, forged pid, post-check symlink swap | high | Done |
+| S-11 | SBOM and `cargo audit` in CI | low | |
+| S-13 | The pinentry socket still serves any process running as the **same user** during a connect attempt. Inherent to the design; revisit if the threat model tightens | medium | Mitigated by peer-uid check, request cap and a short window |
 
 ---
 
-## Won't (rappel)
+## Won't
 
 - Windows
-- Réimplémenter Fortinet / remplacer NetworkManager
-- Stocker password/OTP dans `~/.config`
-- GUI en root / setuid `tofv-app`
+- Reimplementing Fortinet, or replacing NetworkManager
+- Storing the password or OTP in `~/.config`
+- A root GUI, or a setuid `tofv-app`
 - `NOPASSWD: /usr/bin/openfortivpn`
-- Autoconnect sans TOTP
-- **Générateur TOTP / seed OATH / `totp-auto` / `totp-show` / import QR** — FortiToken F121 et FTM : le QR est un code d’activation, pas un secret OATH. Saisie manuelle uniquement.
+- Autoconnect without a one-time code
+- **A built-in code generator / OATH seed / QR import** — the Fortinet QR is
+  an activation payload, not an OATH secret. Manual entry only.
 
 ---
 
-## Ordre suggéré (prochaines itérations)
+## Suggested order
 
-1. **P0-1** — icône tray connecté/déconnecté (autostart + lanceur déjà là)  
-2. **P1-D2** — bouton UI « Installer le helper »  
-3. **S-2** — documenter `allow_active=yes` / option `auth_admin_keep`  
-5. **P2-L1 + P2-L3 + P2-L4 + P2-L5** — AUR + CI  
-6. **P2-P1** — multi-profils si 2ᵉ VPN  
+1. **P0-1** — connected/disconnected tray icon
+2. **P1-U4** — bundle the fonts locally (the network call is the last thing
+   the UI does that the user did not ask for)
+3. **P1-D2** — "Install the helper" button
+4. **S-2** — document `allow_active=yes` and the `auth_admin_keep` option
+5. **P2-L1 + P2-L4 + P2-L5** — AUR and release artifacts
+6. **P2-P1** — multiple profiles, once there is a second VPN to connect to
 
-Ce fichier est le contrat de suite. On coche ici, pas dans le README.
+This file is the plan of record. Tick items here, not in the README.
