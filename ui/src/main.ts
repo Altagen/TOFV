@@ -121,6 +121,11 @@ function render(s: Snapshot) {
   $("doc-secret").textContent = byId("secret-tool")?.detail ?? "…";
   $("doc-helper").textContent = byId("helper")?.detail ?? "…";
 
+  // The same planner fills this block for a Preview click and for a real
+  // connection, so the label has to say which one you are looking at.
+  const live =
+    s.status === "connecting" || s.status === "up" || s.status === "disconnecting";
+  $("command-kicker").textContent = live ? "command running" : "command preview";
   $("command").textContent = s.command ?? "—";
   tail = s.logs.slice(-TAIL);
   paintTail();
