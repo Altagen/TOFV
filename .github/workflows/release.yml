@@ -99,7 +99,7 @@ jobs:
       # One SBOM covering both ecosystems: syft reads Cargo.lock and
       # package-lock.json in the same pass, so there is nothing to merge and
       # no unverified binary to download in order to merge it.
-      - uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+      - uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           path: .
           format: cyclonedx-json
