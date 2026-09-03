@@ -1,5 +1,9 @@
 # TOFV — Tray OpenFortiVPN
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Altagen/TOFV/ci.yml?branch=develop&label=CI)](https://github.com/Altagen/TOFV/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Altagen/TOFV)](https://github.com/Altagen/TOFV/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A small desktop client for [openfortivpn](https://github.com/adrienverge/openfortivpn).
 
 TOFV does not reimplement the Fortinet protocol. It wraps the

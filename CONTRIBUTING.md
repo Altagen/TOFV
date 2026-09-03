@@ -38,6 +38,38 @@ Common types: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`,
 `build`, `chore`. Use `!` or a `BREAKING CHANGE:` trailer for anything that
 changes the profile format, the IPC surface or the helper contract.
 
+## Cutting a release
+
+Tagging is the whole procedure — `release.yml` does the rest — but the tag is
+also the point of no return, so the checks come first.
+
+1. Bump the version in **all four** manifests: `Cargo.toml` (workspace),
+   `src-tauri/tauri.conf.json`, `ui/package.json`, `packaging/arch/PKGBUILD`.
+   Then confirm:
+
+   ```sh
+   ./scripts/check-version.sh 0.2.0
+   ```
+
+   The release workflow runs this before building, so a mismatch fails in
+   seconds rather than after a full compile. It matters because the binaries
+   report the Cargo version through `--version`.
+
+2. Merge `develop` into `main`, then tag `main` with a **bare** version:
+
+   ```sh
+   git tag 0.2.0 && git push origin 0.2.0
+   ```
+
+3. The workflow builds `linux-x86_64`, stages the tarball, generates a
+   CycloneDX SBOM, writes `SHA256SUMS.txt`, builds the notes from the
+   Conventional Commits history with git-cliff, and publishes. A tag with a
+   suffix (`0.2.0-rc.1`) is published as a pre-release.
+
+If something fails **after** the release exists, delete it and the tag before
+retrying — `gh release delete 0.2.0 --cleanup-tag` — otherwise the second run
+collides with the assets of the first.
+
 ## What a change needs
 
 - **Tests for anything with a security or performance contract.** The two

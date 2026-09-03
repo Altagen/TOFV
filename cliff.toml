@@ -1,0 +1,57 @@
+# git-cliff configuration for TOFV.
+# Generates the notes attached to each GitHub release from the Conventional
+# Commits history. See https://git-cliff.org/docs/configuration
+
+[changelog]
+# Each GitHub release stands alone, so no repeated header.
+header = ""
+
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | striptags | trim }}
+    {% for commit in commits %}
+        - ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/Altagen/TOFV/commit/{{ commit.id }})) {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ commit.message | upper_first }}{% if commit.breaking %} ⚠️ **BREAKING CHANGE**{% endif %}\
+    {% endfor %}
+{% endfor %}\n
+"""
+
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+
+commit_preprocessors = [
+  { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/Altagen/TOFV/issues/${2}))" },
+]
+
+# Security first: TOFV runs a root helper and handles VPN credentials, so
+# anything touching that should be the first thing a reader sees.
+commit_parsers = [
+  # Scope-based only. Matching on the body was tried and pulled `docs:` and
+  # `ci:` commits into Security merely for mentioning the word, which is worse
+  # than missing one: it makes the section untrustworthy.
+  { message = "^fix\\(helper\\)|^fix\\(security\\)|^feat\\(security\\)", group = "<!-- 0 -->🔒 Security" },
+  { message = "^feat", group = "<!-- 1 -->🚀 Features" },
+  { message = "^fix", group = "<!-- 2 -->🐛 Bug Fixes" },
+  { message = "^perf", group = "<!-- 3 -->⚡ Performance" },
+  { message = "^doc", group = "<!-- 4 -->📝 Documentation" },
+  { message = "^refactor", group = "<!-- 5 -->♻️ Refactor" },
+  { message = "^style", group = "<!-- 6 -->🎨 Styling" },
+  { message = "^test", group = "<!-- 7 -->✅ Testing" },
+  { message = "^chore\\(release\\): prepare for", skip = true },
+  { message = "^chore\\(deps.*\\)", skip = true },
+  { message = "^chore|^ci|^build", group = "<!-- 8 -->⚙️ Miscellaneous" },
+  { message = "^revert", group = "<!-- 9 -->⏪ Revert" },
+]
+
+protect_breaking_commits = false
+filter_commits = false
+# Tags are bare versions, no "v" prefix.
+tag_pattern = "[0-9]+\\.[0-9]+\\.[0-9]+"
+skip_tags = ""
+ignore_tags = ""
+topo_order = false
+sort_commits = "oldest"

@@ -27,10 +27,18 @@ jobs:
       contents: write # create the release and upload assets
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0 # git-cliff needs the history, not just the tip
 
       - name: Resolve version
         id: v
         run: echo "version=${{ github.event.inputs.version || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      # Before anything is built: the binaries report the Cargo version, so a
+      # tag that disagrees with the manifests would publish a binary that lies
+      # about which release it is.
+      - name: Check the manifests match the tag
+        run: ./scripts/check-version.sh '${{ steps.v.outputs.version }}'
 
       # The runner's third-party apt sources break `apt-get update` whenever
       # one of their mirrors is mid-sync. Ubuntu's own are left alone.
@@ -108,16 +116,28 @@ jobs:
           sha256sum "tofv-${v}-linux-x86_64.tar.gz" "tofv-${v}-sbom.json" \
             | tee SHA256SUMS.txt
 
+      - name: Generate the release notes
+        uses: orhun/git-cliff-action@3d96a18cc4ec17e9dc69ddcc424ccafaf1f78ce2 # v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGES.md
+
       - name: Publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eu
           v='${{ steps.v.outputs.version }}'
+          # A tag carrying a suffix (0.1.0-rc.1) is a pre-release.
+          prerelease=""
+          case "$v" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$v" \
             --repo "${{ github.repository }}" \
             --title "TOFV $v" \
-            --generate-notes \
+            --notes-file CHANGES.md \
+            $prerelease \
             "tofv-${v}-linux-x86_64.tar.gz" \
             "tofv-${v}-sbom.json" \
             SHA256SUMS.txt
