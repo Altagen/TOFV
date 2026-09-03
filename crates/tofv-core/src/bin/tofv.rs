@@ -52,7 +52,15 @@ enum Command {
     /// Extract --trusted-cert from openfortivpn output on stdin
     ParseCert,
     /// Check openfortivpn, secret-tool, profile, runtime dirs
-    Doctor,
+    Doctor {
+        /// Print the gateway host and username instead of hiding them.
+        ///
+        /// Hidden by default because this output is what people paste into
+        /// bug reports, and a corporate VPN endpoint plus a username is not
+        /// something to publish by accident.
+        #[arg(long)]
+        show_profile: bool,
+    },
 }
 
 #[derive(Clone, Copy, clap::ValueEnum)]
@@ -229,12 +237,12 @@ fn run() -> tofv_core::Result<()> {
                 }
             }
         }
-        Command::Doctor => doctor(&paths)?,
+        Command::Doctor { show_profile } => doctor(&paths, show_profile)?,
     }
     Ok(())
 }
 
-fn doctor(paths: &AppPaths) -> tofv_core::Result<()> {
+fn doctor(paths: &AppPaths, show_profile: bool) -> tofv_core::Result<()> {
     println!("config dir:  {}", paths.config_dir.display());
     println!("runtime dir: {}", paths.runtime_dir.display());
 
@@ -256,7 +264,17 @@ fn doctor(paths: &AppPaths) -> tofv_core::Result<()> {
 
     match paths.load_profile(DEFAULT_PROFILE_ID) {
         Ok(p) => match p.validate_ready() {
-            Ok(()) => println!("profile:      {}@{}:{} ready", p.username, p.host, p.port),
+            // The port and whether a realm is set are the parts that actually
+            // help diagnose a connection problem; the host and username only
+            // identify the person pasting the output.
+            Ok(()) if show_profile => {
+                println!("profile:      {}@{}:{} ready", p.username, p.host, p.port)
+            }
+            Ok(()) => println!(
+                "profile:      ready (port {}, realm {}) — host and user hidden, --show-profile to see them",
+                p.port,
+                if p.realm.trim().is_empty() { "unset" } else { "set" },
+            ),
             Err(e) => println!("profile:      present but incomplete ({e})"),
         },
         Err(e) => println!("profile:      {e}"),

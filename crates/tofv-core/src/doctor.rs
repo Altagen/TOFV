@@ -84,6 +84,32 @@ pub fn appindicator_available() -> bool {
     CANDIDATES.iter().any(|p| Path::new(p).exists())
 }
 
+/// How *this* installation reinstalls its privileged helper.
+///
+/// The hint used to be hardcoded to `./scripts/install.sh`, which only exists
+/// in a source checkout. Someone who installed from the release tarball was
+/// told to run a path that is not there.
+fn helper_install_hint() -> String {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            // Unpacked release tarball: the script sits beside the binaries.
+            if dir.join("install-bin.sh").is_file() {
+                return "./install-bin.sh".into();
+            }
+            // Source checkout: target/{debug,release}/tofv
+            if dir.join("../../scripts/install.sh").is_file() {
+                return "./scripts/install.sh".into();
+            }
+            // Distro package: the helper ships with it, so reinstalling the
+            // package is the answer rather than running a script.
+            if dir.starts_with("/usr/bin") || dir.starts_with("/usr/local/bin") {
+                return "reinstall the tofv package (the helper ships with it)".into();
+            }
+        }
+    }
+    "./install-bin.sh (release tarball) or ./scripts/install.sh (source checkout)".into()
+}
+
 /// Compiled-in version of whichever binary is asking.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -218,20 +244,19 @@ pub fn report() -> DoctorReport {
     });
 
     let blocking = items.iter().any(|i| i.blocking && !i.ok);
-    let (install_cmd, helper_cmd) = match distro {
-        Distro::Arch => (
-            "sudo pacman -S openfortivpn ppp libsecret polkit libayatana-appindicator".into(),
-            "./scripts/install.sh".into(),
-        ),
-        Distro::Debian => (
-            "sudo apt install openfortivpn ppp libsecret-tools policykit-1 libayatana-appindicator3-1".into(),
-            "./scripts/install.sh".into(),
-        ),
-        Distro::Unknown => (
-            "installe openfortivpn, ppp, libsecret (secret-tool) et polkit (pkexec)".into(),
-            "./scripts/install.sh".into(),
-        ),
+    let install_cmd = match distro {
+        Distro::Arch => {
+            "sudo pacman -S openfortivpn ppp libsecret polkit libayatana-appindicator".into()
+        }
+        Distro::Debian => {
+            "sudo apt install openfortivpn ppp libsecret-tools policykit-1 libayatana-appindicator3-1"
+                .into()
+        }
+        Distro::Unknown => {
+            "install openfortivpn, ppp, libsecret (secret-tool) and polkit (pkexec)".into()
+        }
     };
+    let helper_cmd = helper_install_hint();
 
     DoctorReport {
         version: VERSION.to_string(),

@@ -1,7 +1,7 @@
 # Maintainer: Altagen <46873683+Altagen@users.noreply.github.com>
 # Thin Arch/CachyOS package: UI + allowlisted helper. Runtime VPN is openfortivpn.
 pkgname=tofv
-pkgver=0.1.2
+pkgver=0.1.3
 pkgrel=1
 pkgdesc="Tray OpenFortiVPN — unprivileged GUI wrapping openfortivpn"
 arch=(x86_64)
