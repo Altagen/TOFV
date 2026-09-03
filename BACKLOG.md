@@ -136,7 +136,9 @@ Effort: S (hours), M (1–3 days), L (a week or more).
 | S-8 | Tauri capabilities: review on every new command | medium | |
 | S-9 | Never expose `insecure-ssl` in the UI | high | Already banned in the helper |
 | S-10 | Attack tests: `pppd-plugin`, `../../etc/shadow` paths, forged pid, post-check symlink swap | high | Done |
-| S-11 | SBOM and `cargo audit` in CI | low | |
+| S-11 | SBOM published with release artifacts | low | `cargo deny` covers advisories, licences, bans and sources in CI; the SBOM half is still open |
+| S-14 | `glib` 0.18 `VariantStrIter` unsoundness (RUSTSEC-2024-0429) | low | Pinned by Tauri; TOFV never calls it. Clears when Tauri moves off GTK3 |
+| S-15 | 16 unmaintained crates, all archived gtk-rs GTK3 bindings via Tauri | low | Listed with reasons in `deny.toml`; nothing to do until Tauri targets GTK4 |
 | S-13 | The pinentry socket still serves any process running as the **same user** during a connect attempt. Inherent to the design; revisit if the threat model tightens | medium | Mitigated by peer-uid check, request cap and a short window |
 
 ---

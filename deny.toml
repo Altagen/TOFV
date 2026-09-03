@@ -1,0 +1,79 @@
+# cargo-deny configuration.
+#
+# TOFV ships a binary that runs next to a root helper, so what ends up in the
+# dependency tree matters. This file is the record of what we accept and why.
+
+[graph]
+targets = [{ triple = "x86_64-unknown-linux-gnu" }]
+
+[advisories]
+# Actual vulnerabilities always fail the build. Everything tolerated below is
+# listed explicitly, with the reason, so nothing is silently ignored.
+yanked = "deny"
+ignore = [
+    # --- gtk-rs GTK3 bindings, archived upstream in favour of gtk4-rs ---
+    # These arrive through tauri -> tao/wry, which has not moved to GTK4 yet.
+    # TOFV cannot drop them without dropping Tauri; revisit when Tauri does.
+    { id = "RUSTSEC-2024-0411", reason = "gdkwayland-sys: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0412", reason = "gdk: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0413", reason = "atk: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0414", reason = "gdkx11-sys: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0415", reason = "gtk: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0416", reason = "atk-sys: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0417", reason = "gdkx11: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0418", reason = "gdk-sys: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0419", reason = "gtk3-macros: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+    { id = "RUSTSEC-2024-0420", reason = "gtk-sys: GTK3 binding, unmaintained upstream; pulled in by tauri" },
+
+    # --- unsound, not vulnerable ---
+    # glib::VariantStrIter is unsound before 0.20; tauri pins glib 0.18.
+    # TOFV never calls VariantStrIter itself. Tracked as S-14 in BACKLOG.md.
+    { id = "RUSTSEC-2024-0429", reason = "glib 0.18 VariantStrIter unsoundness; not called by TOFV, pinned by tauri" },
+
+    # --- unmaintained transitive build-time crates ---
+    { id = "RUSTSEC-2024-0370", reason = "proc-macro-error: build-time only, via gtk3-macros" },
+    { id = "RUSTSEC-2025-0075", reason = "unic-char-range: unmaintained, transitive" },
+    { id = "RUSTSEC-2025-0080", reason = "unic-common: unmaintained, transitive" },
+    { id = "RUSTSEC-2025-0081", reason = "unic-char-property: unmaintained, transitive" },
+    { id = "RUSTSEC-2025-0098", reason = "unic-ucd-version: unmaintained, transitive" },
+    { id = "RUSTSEC-2025-0100", reason = "unic-ucd-ident: unmaintained, transitive" },
+]
+
+[licenses]
+# TOFV is MIT. openfortivpn stays an external GPL *process* we execute, never
+# link, so no GPL code may end up in the binary — this check is what enforces
+# that claim rather than merely asserting it in the README.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "CC0-1.0",
+    "BSL-1.0",
+    "OpenSSL",
+]
+confidence-threshold = 0.9
+# The list above is forward-looking; not every entry is in the tree today.
+unused-allowed-license = "allow"
+
+[bans]
+# Duplicate versions are noise we inherit from Tauri, not something to gate on.
+multiple-versions = "warn"
+# A `*` version requirement from a registry is unacceptable — it means a build
+# can silently pull anything. Our own crates are path dependencies inside this
+# workspace, which cargo-deny also reports as wildcards; those are fine.
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+# Nothing may come from a git URL or an alternative registry: every crate must
+# be a published, checksummed crates.io release.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

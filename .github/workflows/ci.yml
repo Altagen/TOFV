@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Least privilege by default. A job that needs more asks for it explicitly.
+# Without this the token inherits the repository default, which can be
+# read/write on contents — more than any of these jobs needs.
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -15,12 +21,15 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      # webkit2gtk 4.1 and the appindicator library are what the Tauri shell
-      # links against; librsvg is needed for the icons.
+      # The runner ships third-party apt sources (Chrome, Microsoft) that we do
+      # not need. They break `apt-get update` with exit 100 whenever one of
+      # their mirrors is mid-sync, which has nothing to do with this project.
+      # Ubuntu's own repos live in ubuntu.sources and are untouched.
       - name: Install system dependencies
         run: |
+          sudo rm -f /etc/apt/sources.list.d/*.list
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             libwebkit2gtk-4.1-dev \
@@ -32,13 +41,13 @@ jobs:
             clang \
             pkg-config
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           components: rustfmt, clippy
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -64,11 +73,30 @@ jobs:
       - name: Release build
         run: cargo build --workspace --release --locked
 
-  audit:
-    name: cargo audit
+  deps:
+    name: dependency audit
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: rustsec/audit-check@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Advisories, licences, banned crates and sources in one pass. Tolerated
+      # advisories are listed with a reason in deny.toml, never silently.
+      # Licences matter here specifically: TOFV is MIT and only *executes*
+      # GPL openfortivpn, so no GPL code may end up linked into the binary.
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          command: check advisories licenses bans sources
+
+  frontend-audit:
+    name: npm audit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      # The UI tree was previously unchecked entirely.
+      - run: npm --prefix ui ci
+      - run: npm --prefix ui audit --audit-level=high

@@ -14,6 +14,8 @@ edition = "2021"
 license = "MIT"
 repository = "https://github.com/Altagen/TOFV"
 rust-version = "1.80"
+# Application crates, not crates.io libraries.
+publish = false
 
 [workspace.dependencies]
 tofv-core = { path = "crates/tofv-core" }
