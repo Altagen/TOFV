@@ -21,7 +21,9 @@ terminal. If you change the `Containerfile`, rebuild the image with
 ## Branching and commits
 
 GitFlow: work branches off `develop`, `develop` merges into `main`, and
-`main` is tagged `vX.Y.Z`.
+`main` is tagged with a bare version — `0.1.0`, no `v` prefix. That matches
+the other Altagen projects and is what the Ora registry entry substitutes into
+the asset name, so a `v` would break `ora install tofv`.
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org)
 so release notes can be generated from the history:

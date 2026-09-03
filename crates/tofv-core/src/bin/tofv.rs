@@ -16,6 +16,7 @@ use tofv_core::{
 #[derive(Parser)]
 #[command(
     name = "tofv",
+    version,
     about = "Tray OpenFortiVPN — plan and inspect an openfortivpn session"
 )]
 struct Cli {

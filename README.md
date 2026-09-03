@@ -101,10 +101,45 @@ Builds in release, installs the helper into `/usr/local/libexec` (needs
 sudo), the `.desktop` entry, the autostart entry and `~/.local/bin/tofv-app`.
 Re-run `./scripts/install.sh` after every `git pull`.
 
-### 3. Binary tarball
+### 3. Binary tarball, or Ora
 
-Planned, not published yet — it will ship with a `vX.Y.Z` tag and a CI
-artifact. Until then use path 2.
+For a machine that already has `openfortivpn` but no TOFV package and no Rust
+toolchain. Every release publishes a `linux-x86_64` tarball.
+
+With [Ora](https://github.com/Altagen/Ora):
+
+```sh
+ora install tofv
+```
+
+Ora installs into `~/.local` without root, which covers `tofv-app` and `tofv`.
+TOFV also needs its root helper and polkit rule before Connect will work, so
+finish with `install-bin.sh` from the tarball (or `scripts/install-helper.sh`
+from a checkout). The first-run screen says so too.
+
+By hand:
+
+```sh
+tar xf tofv-0.1.0-linux-x86_64.tar.gz
+cd tofv-0.1.0-linux-x86_64
+./install-bin.sh      # same as install.sh, without the build step
+tofv-app
+```
+
+The tarball carries `tofv-app`, `tofv`, `tofv-helper`, `pinentry-tofv`, the
+polkit policy, the `.desktop` entry and the icons. It does **not** carry
+`openfortivpn`, `pppd`, GTK/WebKit or `libsecret` — those stay distribution
+packages. glibc x86_64; not musl, not an old distribution.
+
+### Verifying a download
+
+Each release ships `SHA256SUMS.txt` covering every published file, and
+`tofv-<version>-sbom.json`, a CycloneDX SBOM of the whole dependency tree —
+Rust and npm in one document.
+
+```sh
+sha256sum -c SHA256SUMS.txt --ignore-missing
+```
 
 ### Runtime requirements
 

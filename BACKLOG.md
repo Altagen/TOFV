@@ -96,10 +96,11 @@ Effort: S (hours), M (1–3 days), L (a week or more).
 | P2-L1 | **PKGBUILD / AUR** (Arch, CachyOS), Polkit policy with the real prefix | L |
 | P2-L2 | `.deb` (Debian / Ubuntu 24.04+) | L |
 | P2-L4 | Release builds (`--release`), stripped | S |
-| P2-L5 | Release artifact `tofv-VERSION-linux-x64.tar.gz` with `install-bin.sh` (README path 3) | M |
-| P2-L6 | `vX.Y.Z` tags, changelog, checksums | S |
+| P2-L5 | ~~Release artifact, SBOM and checksums~~ — done: `release.yml` publishes `tofv-{version}-linux-x86_64.tar.gz`, a CycloneDX SBOM and `SHA256SUMS.txt` | M |
+| P2-L6 | Changelog generated from the Conventional Commits history (cliff.toml, as in Ora/Rite) | S |
 | P2-L7 | **No single Flatpak** for the helper (pppd) | — |
 | P2-L8 | Helper upgrades: reinstall the policy when the path changes | M |
+| P2-L9 | `linux-aarch64` release. Nothing technical blocks it — Debian builds `openfortivpn` and `libwebkit2gtk-4.1` for arm64, and aarch64 is a Tier 1 Rust target. What is missing is an ARM container base (`archlinux:base-devel` is x86_64 only) and someone who can actually run the result. Skip armhf/armel | M |
 
 ### Observability
 
@@ -136,7 +137,7 @@ Effort: S (hours), M (1–3 days), L (a week or more).
 | S-8 | Tauri capabilities: review on every new command | medium | |
 | S-9 | Never expose `insecure-ssl` in the UI | high | Already banned in the helper |
 | S-10 | Attack tests: `pppd-plugin`, `../../etc/shadow` paths, forged pid, post-check symlink swap | high | Done |
-| S-11 | SBOM published with release artifacts | low | `cargo deny` covers advisories, licences, bans and sources in CI; the SBOM half is still open |
+| S-11 | ~~SBOM + `cargo audit` in CI~~ — done: `cargo deny` in CI, CycloneDX SBOM published per release | low | |
 | S-14 | `glib` 0.18 `VariantStrIter` unsoundness (RUSTSEC-2024-0429) | low | Pinned by Tauri; TOFV never calls it. Clears when Tauri moves off GTK3 |
 | S-15 | 16 unmaintained crates, all archived gtk-rs GTK3 bindings via Tauri | low | Listed with reasons in `deny.toml`; nothing to do until Tauri targets GTK4 |
 | S-13 | The pinentry socket still serves any process running as the **same user** during a connect attempt. Inherent to the design; revisit if the threat model tightens | medium | Mitigated by peer-uid check, request cap and a short window |
@@ -163,7 +164,7 @@ Effort: S (hours), M (1–3 days), L (a week or more).
    the UI does that the user did not ask for)
 3. **P1-D2** — "Install the helper" button
 4. **S-2** — document `allow_active=yes` and the `auth_admin_keep` option
-5. **P2-L1 + P2-L4 + P2-L5** — AUR and release artifacts
+5. **P2-L1** — AUR package (release artifacts are done)
 6. **P2-P1** — multiple profiles, once there is a second VPN to connect to
 
 This file is the plan of record. Tick items here, not in the README.

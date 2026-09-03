@@ -16,7 +16,11 @@ use tofv_scan::{find_session, priv_dir};
 use validate::{allowed_openfortivpn, caller_uid, read_config_checked, validate_config_body};
 
 #[derive(Parser)]
-#[command(name = "tofv-helper", about = "Allowlisted openfortivpn start/stop")]
+#[command(
+    name = "tofv-helper",
+    version,
+    about = "Allowlisted openfortivpn start/stop"
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -42,10 +46,13 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<(), String> {
+    // Parse first: it only reads argv, and it is what makes --help and
+    // --version answerable without root. The privilege check still gates
+    // every action below.
+    let cli = Cli::parse();
     if !is_root() {
         return Err("must run as root (pkexec/sudo)".into());
     }
-    let cli = Cli::parse();
     let uid = caller_uid()?;
     match cli.cmd {
         Cmd::Start { config } => start(uid, &config),

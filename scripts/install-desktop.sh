@@ -20,7 +20,7 @@ fi
 BIN="$OUT/tofv-app"
 
 if [ ! -x "$BIN" ]; then
-    echo "pas de binaire $BIN — lance d’abord ./scripts/install.sh" >&2
+    echo "no binary at $BIN — run ./scripts/install.sh first" >&2
     exit 1
 fi
 
@@ -33,7 +33,7 @@ install_size() {
     dest="$HICOLOR/${size}x${size}/apps/${APP_ID}.png"
     mkdir -p "$(dirname "$dest")"
     install -m 644 "$src" "$dest"
-    # fallback si l’app_id Wayland reste le nom du binaire
+    # Fallback when the Wayland app_id stays the binary name.
     ln -sfn "${APP_ID}.png" "$HICOLOR/${size}x${size}/apps/tofv-app.png"
 }
 
@@ -55,7 +55,7 @@ fi
 APP_BIN="$BINDIR/tofv-app"
 sed -e "s|@TRYEXEC@|$APP_BIN|" -e "s|@EXEC@|$APP_BIN|" \
     "$ROOT/packaging/linux/dev.tofv.desktop" > "$APPS/${APP_ID}.desktop"
-# Plasma matche le basename du .desktop sur l’app_id Wayland.
+# Plasma matches the .desktop basename against the Wayland app_id.
 sed "s|^StartupWMClass=.*|StartupWMClass=tofv-app|" "$APPS/${APP_ID}.desktop" \
     > "$APPS/tofv-app.desktop"
 chmod 644 "$APPS/${APP_ID}.desktop" "$APPS/tofv-app.desktop"
