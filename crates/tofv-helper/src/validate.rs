@@ -2,6 +2,8 @@ use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
+use tofv_scan::runtime_dir;
+
 /// Keys the GUI actually emits. Anything else (pppd-*, resolvconf, …) is refused.
 const ALLOWED_KEYS: &[&str] = &[
     "host",
@@ -38,14 +40,6 @@ pub fn caller_uid() -> Result<u32, String> {
         }
     }
     Err("PKEXEC_UID/SUDO_UID missing — refuse to run without a calling user".into())
-}
-
-pub fn runtime_dir(uid: u32) -> PathBuf {
-    PathBuf::from(format!("/run/user/{uid}/tofv"))
-}
-
-pub fn priv_dir(uid: u32) -> PathBuf {
-    PathBuf::from(format!("/run/tofv/{uid}"))
 }
 
 /// Open the config and validate the **file descriptor**, then read from that
@@ -245,66 +239,6 @@ pub fn allowed_openfortivpn(path: &Path) -> Result<PathBuf, String> {
         return Err("openfortivpn is writable by group/other".into());
     }
     Ok(canon)
-}
-
-pub fn comm_is_openfortivpn(pid: u32) -> bool {
-    let comm = fs::read_to_string(format!("/proc/{pid}/comm")).unwrap_or_default();
-    comm.trim() == "openfortivpn"
-}
-
-fn cmdline_belongs_to_tofv(cmdline: &[u8], uid: u32) -> bool {
-    let hay = cmdline
-        .split(|b| *b == 0)
-        .collect::<Vec<_>>()
-        .join(&b" "[..]);
-    let hay = String::from_utf8_lossy(&hay);
-    hay.contains(&format!("/run/user/{uid}/tofv/")) || hay.contains(&format!("/run/tofv/{uid}/"))
-}
-
-fn scan_proc(uid: u32) -> Option<u32> {
-    let dir = fs::read_dir("/proc").ok()?;
-    for ent in dir.flatten() {
-        let pid: u32 = match ent.file_name().to_str().and_then(|s| s.parse().ok()) {
-            Some(p) => p,
-            None => continue,
-        };
-        if !comm_is_openfortivpn(pid) {
-            continue;
-        }
-        let cmd = fs::read(format!("/proc/{pid}/cmdline")).unwrap_or_default();
-        if cmdline_belongs_to_tofv(&cmd, uid) {
-            return Some(pid);
-        }
-    }
-    None
-}
-
-/// Helper pid file, else /proc scan for our config path.
-pub fn find_session(uid: u32) -> Option<u32> {
-    let pid_path = priv_dir(uid).join("vpn.pid");
-    if let Ok(text) = fs::read_to_string(&pid_path) {
-        if let Ok(pid) = text.trim().parse::<u32>() {
-            if comm_is_openfortivpn(pid) {
-                return Some(pid);
-            }
-        }
-    }
-    scan_proc(uid)
-}
-
-#[cfg(test)]
-mod session_scan {
-    use super::*;
-
-    #[test]
-    fn cmdline_marker() {
-        let cmd = b"openfortivpn\0-c\0/run/user/1000/tofv/default.conf\0";
-        assert!(cmdline_belongs_to_tofv(cmd, 1000));
-        assert!(!cmdline_belongs_to_tofv(cmd, 42));
-        let root_copy = b"openfortivpn\0-c\0/run/tofv/1000/session.conf\0";
-        assert!(cmdline_belongs_to_tofv(root_copy, 1000));
-        assert!(!cmdline_belongs_to_tofv(root_copy, 42));
-    }
 }
 
 #[cfg(test)]

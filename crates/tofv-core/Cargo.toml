@@ -11,6 +11,7 @@ name = "tofv"
 path = "src/bin/tofv.rs"
 
 [dependencies]
+tofv-scan.workspace = true
 clap.workspace = true
 serde.workspace = true
 thiserror.workspace = true

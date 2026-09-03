@@ -7,5 +7,6 @@ rust-version.workspace = true
 description = "Root helper: start/stop openfortivpn with a locked-down argv"
 
 [dependencies]
+tofv-scan.workspace = true
 clap.workspace = true
 libc = "0.2"

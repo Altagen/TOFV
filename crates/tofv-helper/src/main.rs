@@ -12,10 +12,8 @@ use std::time::Duration;
 use clap::{Parser, Subcommand};
 
 mod validate;
-use validate::{
-    allowed_openfortivpn, caller_uid, find_session, priv_dir, read_config_checked,
-    validate_config_body,
-};
+use tofv_scan::{find_session, priv_dir};
+use validate::{allowed_openfortivpn, caller_uid, read_config_checked, validate_config_body};
 
 #[derive(Parser)]
 #[command(name = "tofv-helper", about = "Allowlisted openfortivpn start/stop")]

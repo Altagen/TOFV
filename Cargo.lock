@@ -3556,6 +3556,7 @@ dependencies = [
  "libc",
  "serde",
  "thiserror 2.0.20",
+ "tofv-scan",
  "toml 0.8.23",
  "zeroize",
 ]
@@ -3566,7 +3567,12 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "libc",
+ "tofv-scan",
 ]
+
+[[package]]
+name = "tofv-scan"
+version = "0.1.0"
 
 [[package]]
 name = "tokio"
