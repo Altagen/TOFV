@@ -239,6 +239,7 @@ fn doctor(paths: &AppPaths) -> tofv_core::Result<()> {
     println!("runtime dir: {}", paths.runtime_dir.display());
 
     let report = tofv_core::doctor_report();
+    println!("tofv         {}", report.version);
     for item in &report.items {
         let mark = if item.ok {
             "ok"

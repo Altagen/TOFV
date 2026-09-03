@@ -24,8 +24,8 @@ pub use parse::{
     looks_auth_failed, looks_cert_failed, looks_tunnel_up, parse_openfortivpn_output, CertFinding,
 };
 pub use paths::{
-    install_pinentry_wrapper, openfortivpn_version, resolve_helper, resolve_openfortivpn,
-    resolve_pinentry, resolve_pinentry_bin, AppConfig, AppPaths, Elevate,
+    helper_version, install_pinentry_wrapper, openfortivpn_version, resolve_helper,
+    resolve_openfortivpn, resolve_pinentry, resolve_pinentry_bin, AppConfig, AppPaths, Elevate,
 };
 pub use pinentry_socket::{
     discover_socket_path, fetch_password, percent_decode, percent_encode, PinentryServer,

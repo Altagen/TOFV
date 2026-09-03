@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 use crate::paths::{
-    openfortivpn_version, resolve_helper, resolve_openfortivpn, resolve_pinentry_bin, AppConfig,
+    helper_version, openfortivpn_version, resolve_helper, resolve_openfortivpn,
+    resolve_pinentry_bin, AppConfig,
 };
 use crate::secret::{which, SecretToolStore};
 
@@ -31,6 +32,9 @@ pub struct DoctorItem {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DoctorReport {
+    /// The running application's own version. The doctor answers "is this
+    /// setup sane?", and it could not previously say which TOFV it was.
+    pub version: String,
     pub blocking: bool,
     pub helper_ok: bool,
     pub tray_ok: bool,
@@ -79,6 +83,9 @@ pub fn appindicator_available() -> bool {
     ];
     CANDIDATES.iter().any(|p| Path::new(p).exists())
 }
+
+/// Compiled-in version of whichever binary is asking.
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn report() -> DoctorReport {
     let distro = detect_distro();
@@ -150,12 +157,37 @@ pub fn report() -> DoctorReport {
     }
 
     let helper_ok = if let Some(p) = resolve_helper() {
+        // The helper is installed separately and as root, so it can lag the
+        // app by weeks without anything saying so. Report what is actually
+        // on disk, and flag a mismatch: an older helper is missing whatever
+        // has been fixed since.
+        let installed = helper_version(&p);
+        let (ok, detail) = match installed.as_deref() {
+            Some(v) if v == VERSION => (true, format!("{} ({v})", p.display())),
+            Some(v) => (
+                false,
+                format!(
+                    "{} is {v} but this app is {VERSION} — re-run install-bin.sh / install-helper.sh",
+                    p.display()
+                ),
+            ),
+            // Helpers built before 0.1.1 checked for root before parsing argv,
+            // so they cannot answer --version at all.
+            None => (
+                false,
+                format!(
+                    "{} predates 0.1.1 (cannot report its version) — re-run install-bin.sh",
+                    p.display()
+                ),
+            ),
+        };
         items.push(DoctorItem {
             id: "helper".into(),
-            ok: true,
-            blocking: true,
+            ok,
+            // A stale helper still works; it is a warning, not a wall.
+            blocking: false,
             label: "helper".into(),
-            detail: format!("{} (the only elevation path)", p.display()),
+            detail,
         });
         true
     } else {
@@ -202,6 +234,7 @@ pub fn report() -> DoctorReport {
     };
 
     DoctorReport {
+        version: VERSION.to_string(),
         blocking,
         helper_ok,
         tray_ok,

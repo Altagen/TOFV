@@ -516,6 +516,12 @@ input:focus {
 
 /* The password field is state-driven: an input while nothing is stored,
    a status line with Replace / Forget once it is in the keyring. */
+#app-version {
+  opacity: 0.55;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
 .field-block {
   display: flex;
   flex-direction: column;
