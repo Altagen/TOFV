@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TOFV</title>
+    <link rel="icon" href="/mark.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Oxanium:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="chrome" data-tauri-drag-region>
+      <div class="chrome-brand" data-tauri-drag-region>
+        <img class="chrome-mark" src="/mark.png" alt="" width="18" height="18" />
+        <span>TOFV</span>
+      </div>
+      <div class="chrome-drag" data-tauri-drag-region></div>
+      <div class="win-ctrl">
+        <button type="button" id="win-min" title="Minimise" aria-label="Minimise">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 9.5h8" /></svg>
+        </button>
+        <button type="button" id="win-max" title="Maximise" aria-label="Maximise">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2.5" width="7" height="7" /></svg>
+        </button>
+        <button type="button" id="win-close" title="Close" aria-label="Close">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" /></svg>
+        </button>
+      </div>
+    </div>
+    <div id="gate" class="gate" hidden>
+      <h2>Missing prerequisites</h2>
+      <p class="lede">TOFV wraps <code>openfortivpn</code> — it must be installed on this machine, along with PPP and a keyring.</p>
+      <ul id="gate-list"></ul>
+      <p class="kicker">distro command</p>
+      <pre id="gate-cmd" class="console cmd"></pre>
+      <p class="kicker">TOFV helper (Connect without an admin password)</p>
+      <pre id="gate-helper" class="console cmd"></pre>
+      <button id="gate-recheck" class="btn primary" type="button">Re-check</button>
+    </div>
+    <header class="mast">
+      <div class="brand">
+        <img class="mark" src="/mark.png" alt="" width="56" height="56" />
+        <div>
+          <h1>TOFV</h1>
+          <p class="tag">Tray OpenFortiVPN</p>
+        </div>
+      </div>
+      <div class="led-block">
+        <span id="led" class="led idle" data-status="idle"></span>
+        <div>
+          <p class="kicker">link</p>
+          <p id="status-label" class="status-label">disconnected</p>
+        </div>
+      </div>
+    </header>
+
+    <div id="banner-helper" class="banner" hidden>
+      Root helper not installed — Connect refuses to elevate <code>openfortivpn</code> directly.
+      <code>./scripts/install.sh</code>
+    </div>
+    <div id="toast" class="toast" hidden role="status"></div>
+    <div class="scroll">
+    <main class="deck">
+      <section class="rail">
+        <button id="btn-connect" class="btn primary" type="button">Connect</button>
+        <button id="btn-disconnect" class="btn" type="button">Disconnect</button>
+        <button id="btn-preview" class="btn ghost" type="button"
+                title="Show the exact command and redacted config TOFV would run, without connecting">Preview</button>
+        <dl class="meta">
+          <div>
+            <dt>auth</dt>
+            <dd>one-time code (typed)</dd>
+          </div>
+          <div>
+            <dt>openfortivpn</dt>
+            <dd id="doc-vpn">…</dd>
+          </div>
+          <div>
+            <dt>keyring</dt>
+            <dd id="doc-secret">…</dd>
+          </div>
+          <div>
+            <dt>helper</dt>
+            <dd id="doc-helper">…</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel">
+        <p class="kicker">profile</p>
+        <form id="profile-form" class="grid">
+          <label class="span-2">
+            Host
+            <input id="host" name="host" autocomplete="off" spellcheck="false" required />
+          </label>
+          <label>
+            Port
+            <input id="port" name="port" type="number" min="1" max="65535" required />
+          </label>
+          <label>
+            Realm
+            <input id="realm" name="realm" autocomplete="off" spellcheck="false" />
+          </label>
+          <label class="span-2">
+            Username
+            <input id="username" name="username" autocomplete="username" required />
+          </label>
+          <div class="span-2 field-block">
+            <label for="password">Password</label>
+            <div id="pass-entry" class="field-row">
+              <input id="password" name="password" type="password" autocomplete="new-password" />
+              <button id="btn-save-pass" class="btn" type="button">Store in keyring</button>
+            </div>
+            <div id="pass-stored" class="stored-row" hidden>
+              <span id="pass-stored-label" class="stored-label"></span>
+              <button id="btn-replace-pass" class="btn ghost" type="button">Replace</button>
+              <button id="btn-forget-pass" class="btn ghost" type="button">Forget</button>
+            </div>
+            <small id="pass-state" class="hint"></small>
+          </div>
+          <label class="span-2">
+            trusted-cert
+            <input id="trusted" name="trusted" spellcheck="false" placeholder="SHA-256 (64 hex)" />
+          </label>
+          <div class="span-2 actions">
+            <button class="btn primary" type="submit">Save profile</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <section class="helper">
+      <div class="helper-head">
+        <p id="command-kicker" class="kicker">command preview</p>
+      </div>
+      <pre id="command" class="console cmd">—</pre>
+      <div class="helper-head">
+        <p class="kicker">config (redacted) + log</p>
+        <button id="btn-journal" class="btn ghost" type="button">Log</button>
+      </div>
+      <pre id="journal" class="console log tail">waiting.</pre>
+    </section>
+    </div>
+
+    <div id="modal-otp" class="modal" hidden>
+      <div class="sheet">
+        <p class="kicker">token</p>
+        <h2>One-time code</h2>
+        <p class="lede">Six digits from your token. They go into the ephemeral config, never into argv.</p>
+        <input
+          id="otp"
+          inputmode="numeric"
+          maxlength="6"
+          pattern="[0-9]{6}"
+          autocomplete="one-time-code"
+          placeholder="••••••"
+        />
+        <p id="otp-error" class="hint error" role="alert"></p>
+        <div class="actions">
+          <button id="otp-go" class="btn primary" type="button">Send</button>
+          <button id="otp-cancel" class="btn ghost" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-cert" class="modal" hidden>
+      <div class="sheet">
+        <p class="kicker">gateway</p>
+        <h2 id="cert-title">Trust this certificate?</h2>
+        <p id="cert-lede" class="lede">
+          openfortivpn rejects this SHA-256 fingerprint. Verify it before pinning.
+        </p>
+        <div id="cert-old-block" hidden>
+          <p class="kicker">old (pinned)</p>
+          <pre id="cert-old" class="console cmd"></pre>
+          <p class="kicker">new (gateway)</p>
+        </div>
+        <pre id="cert-hex" class="console cmd"></pre>
+        <div class="actions">
+          <button id="cert-trust" class="btn primary" type="button">Pin and reconnect</button>
+          <button id="cert-cancel" class="btn ghost" type="button">Later</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

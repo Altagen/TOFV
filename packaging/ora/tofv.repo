@@ -1,0 +1,43 @@
+# Registry entry for Ora (https://github.com/Altagen/Ora).
+#
+# Copy this into the ora-registry alongside ora.repo / rite.repo / velt.repo.
+#
+# Caveat worth knowing: Ora installs into ~/.local without root, which covers
+# `tofv-app` and `tofv`. TOFV also needs a root-owned helper and a polkit rule
+# before Connect will work — the tarball carries `install-bin.sh` for that, and
+# the app's first-run screen says so. Ora alone gets you a working panel that
+# refuses to elevate.
+
+name = "tofv"
+description = "Tray OpenFortiVPN — unprivileged desktop client wrapping openfortivpn"
+repo_version = 1
+homepage = "https://github.com/Altagen/TOFV"
+
+[source]
+type = "github-releases"
+repo = "Altagen/TOFV"
+
+[source.download]
+url = "https://github.com/Altagen/TOFV/releases/download/{version}/tofv-{version}-{os}-{arch}.tar.gz"
+
+[platform.os_map]
+linux = "linux"
+
+[platform.arch_map]
+x86_64 = "x86_64"
+
+[install]
+binaries = ["tofv-app", "tofv"]
+
+[security]
+allow_insecure = false
+
+[security.checksum]
+url = "https://github.com/Altagen/TOFV/releases/download/{version}/SHA256SUMS.txt"
+algorithm = "sha256"
+format = "multi-hash"
+
+[metadata]
+license = "MIT"
+authors = ["Altagen"]
+tags = ["vpn", "fortinet", "openfortivpn", "tray", "tauri"]

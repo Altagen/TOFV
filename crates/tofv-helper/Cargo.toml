@@ -1,0 +1,13 @@
+[package]
+name = "tofv-helper"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "Root helper: start/stop openfortivpn with a locked-down argv"
+
+[dependencies]
+tofv-scan.workspace = true
+clap.workspace = true
+libc = "0.2"

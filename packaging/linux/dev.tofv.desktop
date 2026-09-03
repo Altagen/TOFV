@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=TOFV
+GenericName=OpenFortiVPN
+Comment=Tray OpenFortiVPN — wrapper graphique d’openfortivpn
+TryExec=@TRYEXEC@
+Exec=@EXEC@
+Icon=dev.tofv
+Terminal=false
+StartupNotify=false
+StartupWMClass=dev.tofv
+Categories=Network;Security;
+Keywords=vpn;fortinet;openfortivpn;fortigate;
+DBusActivatable=false
+X-GNOME-UsesNotifications=true

@@ -1,0 +1,11 @@
+[package]
+name = "pinentry-tofv"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "pinentry helper that returns the TOFV keyring password to openfortivpn"
+
+[dependencies]
+tofv-core.workspace = true

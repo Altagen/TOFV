@@ -1,0 +1,12 @@
+[package]
+name = "tofv-scan"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "Find a TOFV-owned openfortivpn process via /proc"
+
+# Deliberately dependency-free: tofv-helper runs as root and links this,
+# so every crate added here widens the privileged binary's surface.
+[dependencies]

@@ -1,0 +1,62 @@
+# Maintainer: Altagen <46873683+Altagen@users.noreply.github.com>
+# Thin Arch/CachyOS package: UI + allowlisted helper. Runtime VPN is openfortivpn.
+pkgname=tofv
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Tray OpenFortiVPN — unprivileged GUI wrapping openfortivpn"
+arch=(x86_64)
+url="https://github.com/Altagen/TOFV"
+license=(MIT)
+depends=(
+  openfortivpn
+  ppp
+  libsecret
+  polkit
+  webkit2gtk-4.1
+  gtk3
+  libayatana-appindicator
+)
+makedepends=(rust cargo nodejs npm clang pkgconf)
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  npm --prefix ui ci || npm --prefix ui install
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  npm --prefix ui run build
+  cargo build --release --locked -p tofv-app -p tofv-helper -p pinentry-tofv
+  cargo build --release --locked -p tofv-core --bin tofv
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  libexec=/usr/lib/tofv
+
+  install -Dm755 target/release/tofv-app "$pkgdir/usr/bin/tofv-app"
+  install -Dm755 target/release/tofv "$pkgdir/usr/bin/tofv"
+  install -Dm755 target/release/tofv-helper "$pkgdir$libexec/tofv-helper"
+  install -Dm755 target/release/pinentry-tofv "$pkgdir$libexec/pinentry-tofv"
+
+  sed "s|@LIBEXEC@|$libexec|g" packaging/linux/polkit/dev.tofv.policy.in \
+    | install -Dm644 /dev/stdin "$pkgdir/usr/share/polkit-1/actions/dev.tofv.policy"
+
+  install -Dm644 packaging/linux/dev.tofv.desktop \
+    "$pkgdir/usr/share/applications/dev.tofv.desktop"
+  sed -i -e "s|@TRYEXEC@|/usr/bin/tofv-app|" -e "s|@EXEC@|/usr/bin/tofv-app|" \
+    "$pkgdir/usr/share/applications/dev.tofv.desktop"
+
+  install -Dm644 packaging/linux/dev.tofv.desktop \
+    "$pkgdir/etc/xdg/autostart/dev.tofv.desktop"
+  sed -i -e "s|@TRYEXEC@|/usr/bin/tofv-app|" \
+    -e "s|@EXEC@|/usr/bin/tofv-app --tray|" \
+    "$pkgdir/etc/xdg/autostart/dev.tofv.desktop"
+
+  for sz in 32 64 128 256 512; do
+    install -Dm644 "branding/mark-${sz}.png" \
+      "$pkgdir/usr/share/icons/hicolor/${sz}x${sz}/apps/dev.tofv.png"
+  done
+}
