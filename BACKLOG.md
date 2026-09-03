@@ -46,7 +46,7 @@ Effort: S (hours), M (1–3 days), L (a week or more).
 
 | ID | Item | Effort | Why |
 | --- | --- | --- | --- |
-| P0-1 | **Reliable StatusNotifier tray**: `libayatana-appindicator`, connected/disconnected icon, Connect / Disconnect / Open / Quit menu, left click opens the panel | M | Without the library the panel opens on its own and the "tray daemon" contract is not met |
+| P0-1 | StatusNotifier tray — the state icon is done in 0.1.1 (grey / grey with an amber dot / colour). What remains is the `libayatana-appindicator` dependency itself: without it there is no tray at all and the panel opens instead | M | |
 | P0-5 | **Code prompt**: focus, paste, polish the error messages | S | The everyday gesture |
 | P0-8 | **Log**: "copy the redacted command", log levels | S | Debugging |
 | P0-9 | **Disconnect state**: clearer messages when the helper or pkexec is missing | S | Partly done |
@@ -62,7 +62,7 @@ Effort: S (hours), M (1–3 days), L (a week or more).
 | P1-U1 | Separate **Settings** (profile) from **Session** (connect / logs) | M |
 | P1-U2 | Hide host/port/realm behind "Advanced" once the profile is valid | M |
 | P1-U3 | Desktop notifications (connected, dropped, certificate changed) | S |
-| P1-U4 | **Bundle the fonts locally** — the UI currently fetches Google Fonts over the network, which is a privacy leak and breaks offline | S |
+| P1-U4 | ~~Bundle the fonts locally~~ — done in 0.1.1: IBM Plex Mono and Oxanium ship as woff2 (44 KB, OFL 1.1), and the Tauri CSP no longer allows fonts.googleapis.com or fonts.gstatic.com at all | S |
 | P1-U5 | Accessibility: focus trap in modals, LED contrast | S |
 | P1-U6 | Confirm the password was stored (show the `dev.tofv` keyring entry) | S |
 | P1-U7 | Show the `ppp0` address and gateway once up | S |
@@ -140,6 +140,7 @@ Effort: S (hours), M (1–3 days), L (a week or more).
 | S-11 | ~~SBOM + `cargo audit` in CI~~ — done: `cargo deny` in CI, CycloneDX SBOM published per release | low | |
 | S-14 | `glib` 0.18 `VariantStrIter` unsoundness (RUSTSEC-2024-0429) | low | Pinned by Tauri; TOFV never calls it. Clears when Tauri moves off GTK3 |
 | S-15 | 16 unmaintained crates, all archived gtk-rs GTK3 bindings via Tauri | low | Listed with reasons in `deny.toml`; nothing to do until Tauri targets GTK4 |
+| S-16 | ~~The published SBOM omits npm devDependencies~~ — fixed in 0.1.1 via `.syft.yaml` (`javascript.include-dev-dependencies`) | medium | Verified on the 0.1.0 release: 457 cargo crates and `@tauri-apps/api`, but **not** `typescript` or `vite` — even though vite produces the bundle that ships inside the binary. A compromised build tool is exactly what an SBOM should let you trace. syft catalogues runtime deps only for npm; needs `--select-catalogers` tuning or a separate `cyclonedx-npm` pass. Note esbuild *is* present, caught by the Go binary cataloger — so coverage is currently inconsistent rather than merely narrow |
 | S-13 | The pinentry socket still serves any process running as the **same user** during a connect attempt. Inherent to the design; revisit if the threat model tightens | medium | Mitigated by peer-uid check, request cap and a short window |
 
 ---
@@ -159,12 +160,9 @@ Effort: S (hours), M (1–3 days), L (a week or more).
 
 ## Suggested order
 
-1. **P0-1** — connected/disconnected tray icon
-2. **P1-U4** — bundle the fonts locally (the network call is the last thing
-   the UI does that the user did not ask for)
-3. **P1-D2** — "Install the helper" button
-4. **S-2** — document `allow_active=yes` and the `auth_admin_keep` option
-5. **P2-L1** — AUR package (release artifacts are done)
-6. **P2-P1** — multiple profiles, once there is a second VPN to connect to
+1. **P1-D2** — "Install the helper" button
+2. **S-2** — document `allow_active=yes` and the `auth_admin_keep` option
+3. **P2-L1** — AUR package (release artifacts are done)
+4. **P2-P1** — multiple profiles, once there is a second VPN to connect to
 
 This file is the plan of record. Tick items here, not in the README.

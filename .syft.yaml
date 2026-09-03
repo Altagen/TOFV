@@ -1,0 +1,10 @@
+# syft configuration, read automatically when the SBOM is generated in CI.
+#
+# syft excludes npm devDependencies by default. That default is wrong for us:
+# vite and typescript never ship inside the binary, but vite is what *produces*
+# the bundle embedded in it. A compromised build tool is exactly what an SBOM
+# should let someone trace, so the published document has to name them.
+#
+# Cargo has no equivalent split — build-dependencies are already included.
+javascript:
+  include-dev-dependencies: true

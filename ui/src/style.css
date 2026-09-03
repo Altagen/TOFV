@@ -1,3 +1,37 @@
+/* Bundled, not fetched.
+ *
+ * The panel used to pull these from fonts.googleapis.com on every window
+ * open. For a VPN client that is a network request the user never asked for,
+ * announcing when the app is launched, and it left the UI unstyled offline.
+ *
+ * IBM Plex Mono and Oxanium are both SIL Open Font License 1.1; the licence
+ * travels with them in fonts/OFL.txt, as it requires.
+ */
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-500.woff2") format("woff2");
+}
+
+/* Oxanium is a variable font: one file covers 400 through 700. */
+@font-face {
+  font-family: "Oxanium";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/oxanium-variable.woff2") format("woff2");
+}
+
 :root {
   color-scheme: dark;
   --bg: #0c0e10;
