@@ -1,11 +1,11 @@
-# Maintainer: TOFV
+# Maintainer: Ange Cesari <ange.cesari@proton.me>
 # Thin Arch/CachyOS package: UI + allowlisted helper. Runtime VPN is openfortivpn.
 pkgname=tofv
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Tray OpenFortiVPN — unprivileged GUI wrapping openfortivpn"
 arch=(x86_64)
-url="https://github.com/ange/tofv"
+url="https://github.com/Altagen/TOFV"
 license=(MIT)
 depends=(
   openfortivpn

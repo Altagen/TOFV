@@ -10,13 +10,13 @@ use crate::error::{Error, Result};
 pub const DEFAULT_PROFILE_ID: &str = "default";
 pub const DEFAULT_PORT: u16 = 443;
 
-/// FortiToken hardware / Mobile : saisie des 6 chiffres. Pas de seed OATH.
+/// Hardware or mobile token: the user types the 6 digits. No OATH seed is stored.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum AuthMethod {
     #[default]
     TotpManual,
-    /// Anciennes valeurs `totp-show` / `totp-auto` dans un profil : traitées comme manuel.
+    /// Legacy `totp-show` / `totp-auto` values in a profile: treated as manual.
     #[serde(other)]
     LegacyIgnored,
 }

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,23 +17,23 @@
     <div class="chrome" data-tauri-drag-region>
       <div class="chrome-brand" data-tauri-drag-region>
         <img class="chrome-mark" src="/mark.png" alt="" width="18" height="18" />
-        <span>JOURNAL</span>
+        <span>LOG</span>
       </div>
       <div class="chrome-drag" data-tauri-drag-region></div>
       <div class="win-ctrl">
-        <button type="button" id="win-min" title="Réduire" aria-label="Réduire">
+        <button type="button" id="win-min" title="Minimise" aria-label="Minimise">
           <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 9.5h8" /></svg>
         </button>
-        <button type="button" id="win-max" title="Agrandir" aria-label="Agrandir">
+        <button type="button" id="win-max" title="Maximise" aria-label="Maximise">
           <svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2.5" width="7" height="7" /></svg>
         </button>
-        <button type="button" id="win-close" title="Fermer" aria-label="Fermer">
+        <button type="button" id="win-close" title="Close" aria-label="Close">
           <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" /></svg>
         </button>
       </div>
     </div>
     <pre id="meta" class="console cmd journal-meta">—</pre>
-    <pre id="full-log" class="console log journal-full">en attente.</pre>
+    <pre id="full-log" class="console log journal-full">waiting.</pre>
     <script type="module" src="/src/log.ts"></script>
   </body>
 </html>

@@ -6,7 +6,7 @@ members = ["crates/tofv-core", "crates/pinentry-tofv", "crates/tofv-helper", "sr
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/ange/tofv"
+repository = "https://github.com/Altagen/TOFV"
 rust-version = "1.80"
 
 [workspace.dependencies]

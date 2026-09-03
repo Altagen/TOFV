@@ -1,6 +1,6 @@
 #!/bin/sh
 # Root install: helper + pinentry + Polkit rule.
-# After this, Connect / Couper should not ask for the admin password.
+# After this, Connect / Disconnect should not ask for the admin password.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
@@ -38,5 +38,5 @@ rm -f "$POLICY_TMP"
 
 echo
 echo "OK. Polkit: allow_active=yes for $DEST/tofv-helper"
-echo "Connect / Couper should no longer ask for the admin password."
+echo "Connect / Disconnect should no longer ask for the admin password."
 echo "Test: pkexec $DEST/tofv-helper stop"

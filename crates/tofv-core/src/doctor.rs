@@ -104,7 +104,7 @@ pub fn report() -> DoctorReport {
             "openfortivpn",
             false,
             true,
-            "absent — le tunnel ne peut pas monter".into(),
+            "missing — the tunnel cannot come up".into(),
         )),
     }
 
@@ -114,7 +114,7 @@ pub fn report() -> DoctorReport {
             "pppd",
             false,
             true,
-            "absent (paquet ppp) — openfortivpn en a besoin".into(),
+            "missing (ppp package) — openfortivpn needs it".into(),
         )),
     }
 
@@ -123,14 +123,14 @@ pub fn report() -> DoctorReport {
             "secret-tool",
             true,
             true,
-            "trousseau Secret Service disponible".into(),
+            "Secret Service keyring available".into(),
         ));
     } else {
         items.push(item(
             "secret-tool",
             false,
             true,
-            "absent (libsecret) — mot de passe VPN non stockable".into(),
+            "missing (libsecret) — the VPN password cannot be stored".into(),
         ));
     }
 
@@ -140,7 +140,7 @@ pub fn report() -> DoctorReport {
             "pkexec",
             false,
             true,
-            "absent (polkit) — pas d’élévation pour openfortivpn".into(),
+            "missing (polkit) — no elevation path for openfortivpn".into(),
         )),
     }
 
@@ -150,7 +150,7 @@ pub fn report() -> DoctorReport {
             "pinentry",
             false,
             true,
-            "pinentry-tofv absent — installe le helper (./scripts/install.sh)".into(),
+            "pinentry-tofv missing — install the helper (./scripts/install.sh)".into(),
         )),
     }
 
@@ -160,7 +160,7 @@ pub fn report() -> DoctorReport {
             ok: true,
             blocking: true,
             label: "helper".into(),
-            detail: format!("{} (seul chemin d’élévation)", p.display()),
+            detail: format!("{} (the only elevation path)", p.display()),
         });
         true
     } else {
@@ -169,7 +169,7 @@ pub fn report() -> DoctorReport {
             ok: false,
             blocking: true,
             label: "helper".into(),
-            detail: "non installé — Connect refuse d’appeler openfortivpn en root. ./scripts/install.sh"
+            detail: "not installed — Connect refuses to run openfortivpn as root. ./scripts/install.sh"
                 .into(),
         });
         false
@@ -182,9 +182,9 @@ pub fn report() -> DoctorReport {
         blocking: false,
         label: "systray".into(),
         detail: if tray_ok {
-            "libayatana-appindicator présente".into()
+            "libayatana-appindicator present".into()
         } else {
-            "absente — le panneau s’ouvrira (pas d’icône tray). Sur GNOME : extension AppIndicator."
+            "missing — the panel opens instead (no tray icon). On GNOME: the AppIndicator extension."
                 .into()
         },
     });

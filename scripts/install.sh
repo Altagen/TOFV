@@ -26,7 +26,7 @@ fi
 echo "==> helper + Polkit (sudo)"
 "$ROOT/scripts/install-helper.sh"
 
-echo "==> lanceur utilisateur"
+echo "==> user launcher"
 "$ROOT/scripts/install-desktop.sh"
 mkdir -p "$HOME/.local/bin"
 if [ -x "$TOFV_BIN_DIR/tofv" ]; then
@@ -34,14 +34,14 @@ if [ -x "$TOFV_BIN_DIR/tofv" ]; then
 fi
 
 echo
-echo "TOFV est dans ~/.local/bin/tofv-app  (recharge le PATH si besoin)"
+echo "TOFV is in ~/.local/bin/tofv-app  (reload PATH if needed)"
 echo
 if [ -x "$TOFV_BIN_DIR/tofv" ]; then
     "$TOFV_BIN_DIR/tofv" doctor || true
 fi
 echo
-echo "Lance (le terminal n’a pas besoin de rester ouvert) :"
-echo "  tofv-app                 # panneau + tray, détache du TTY"
-echo "  tofv-app --tray          # icône seulement (login / autostart)"
-echo "  tofv-app --foreground    # logs dans ce terminal"
-echo "Ou double-clic TOFV dans Applications."
+echo "Run (the terminal does not need to stay open):"
+echo "  tofv-app                 # panel + tray, detaches from the TTY"
+echo "  tofv-app --tray          # icon only (login / autostart)"
+echo "  tofv-app --foreground    # logs in this terminal"
+echo "Or double-click TOFV in your applications menu."

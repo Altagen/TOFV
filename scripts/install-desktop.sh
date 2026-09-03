@@ -82,11 +82,11 @@ elif command -v kbuildsycoca5 >/dev/null 2>&1; then
     kbuildsycoca5 >/dev/null 2>&1 || true
 fi
 
-echo "OK. Icône thème : $HICOLOR (name $APP_ID)"
-echo "    Lanceur     : $APPS/${APP_ID}.desktop  (double-clic, pas de terminal)"
-echo "    Autostart   : $AUTOSTART/${APP_ID}.desktop  (tray au login, pas d’autoconnect)"
-echo "    Binaire     : $BINDIR/tofv-app -> $BIN"
+echo "OK. Themed icon : $HICOLOR (name $APP_ID)"
+echo "    Launcher    : $APPS/${APP_ID}.desktop  (double-click, no terminal)"
+echo "    Autostart   : $AUTOSTART/${APP_ID}.desktop  (tray at login, no autoconnect)"
+echo "    Binary      : $BINDIR/tofv-app -> $BIN"
 echo
-echo "Lance depuis le menu Applications, ou : tofv-app"
-echo "Le terminal n’a pas besoin de rester ouvert."
-echo "Systray : sudo pacman -S libayatana-appindicator  (sinon le panneau s’ouvre)"
+echo "Launch from the applications menu, or: tofv-app"
+echo "The terminal does not need to stay open."
+echo "Systray : sudo pacman -S libayatana-appindicator  (otherwise the panel opens)"

@@ -58,7 +58,7 @@ function paintTail() {
   if (tailFrame) return;
   tailFrame = requestAnimationFrame(() => {
     tailFrame = 0;
-    $("journal").textContent = tail.length ? tail.join("\n") : "en attente.";
+    $("journal").textContent = tail.length ? tail.join("\n") : "waiting.";
   });
 }
 
@@ -69,13 +69,13 @@ function pushTail(line: string) {
 }
 
 const labels: Record<UiStatus, string> = {
-  idle: "déconnecté",
-  connecting: "connexion…",
-  disconnecting: "coupure…",
-  up: "connecté",
-  "need-cert": "certificat à épingler",
-  "auth-failed": "auth refusée",
-  error: "erreur",
+  idle: "disconnected",
+  connecting: "connecting…",
+  disconnecting: "disconnecting…",
+  up: "connected",
+  "need-cert": "certificate to pin",
+  "auth-failed": "auth rejected",
+  error: "error",
 };
 
 function render(s: Snapshot) {
@@ -90,8 +90,8 @@ function render(s: Snapshot) {
   ($("realm") as HTMLInputElement).value = s.profile.realm;
   ($("trusted") as HTMLInputElement).value = s.profile.trustedCert ?? "";
   $("pass-state").textContent = s.profile.hasPassword
-    ? "stocké dans le trousseau"
-    : "non stocké";
+    ? "stored in the keyring"
+    : "not stored";
 
   applyDoctor(s.doctor);
 
@@ -143,11 +143,11 @@ function showCertModal(sha256: string, previous: string | null) {
   $("cert-old-block").hidden = !rotated;
   $("cert-old").textContent = previous ?? "";
   $("cert-title").textContent = rotated
-    ? "Le certificat de la passerelle a changé"
-    : "Faire confiance au certificat ?";
+    ? "The gateway certificate changed"
+    : "Trust this certificate?";
   $("cert-lede").textContent = rotated
-    ? "Rotation probable. Compare l’ancienne empreinte et la nouvelle, puis épingler et reconnecter (nouveau TOTP)."
-    : "openfortivpn refuse cette empreinte SHA-256. Vérifie-la avant de l’épingler.";
+    ? "Likely a rotation. Compare the old and new fingerprints, then pin and reconnect (fresh code)."
+    : "openfortivpn rejects this SHA-256 fingerprint. Verify it before pinning.";
   $("modal-cert").hidden = false;
 }
 
@@ -212,9 +212,9 @@ async function doConnect(otp: string) {
 }
 
 function needPassword() {
-  toast("Aucun mot de passe dans le trousseau — saisis-le puis Trousseau.");
+  toast("No password in the keyring — type one, then click Keyring.");
   $("pass-state").textContent =
-    "aucun mot de passe — saisis-le et clique Trousseau";
+    "no password — type one and click Keyring";
   ($("password") as HTMLInputElement).focus();
 }
 
@@ -292,7 +292,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   $("otp-go").addEventListener("click", async () => {
     const otp = ($("otp") as HTMLInputElement).value.trim();
     if (!/^\d{6}$/.test(otp)) {
-      $("otp-error").textContent = "Le code doit contenir exactement 6 chiffres.";
+      $("otp-error").textContent = "The code must be exactly 6 digits.";
       return;
     }
     await doConnect(otp);
@@ -350,7 +350,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       ev.payload === "idle" || ev.payload === "disconnecting";
     if (ev.payload === "auth-failed" && !$("modal-otp").hidden) {
       openOtp(
-        "Code refusé. Le FortiToken F121 change toutes les 60 s — saisis le code affiché maintenant.",
+        "Code rejected. The token rotates about every 60 s — enter the code shown right now.",
       );
     }
     if (ev.payload === "up" || ev.payload === "need-cert") closeOtp();

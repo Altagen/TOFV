@@ -19,7 +19,7 @@ type Snapshot = {
 };
 
 const AUTH_RETRY =
-  "Code refusé. Le FortiToken F121 change toutes les 60 s — saisis le code affiché maintenant.";
+  "Code rejected. The token rotates about every 60 s — enter the code shown right now.";
 
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -49,10 +49,10 @@ function resetForm(error?: string | null) {
   ($("otp-cancel") as HTMLButtonElement).disabled = false;
   $("otp-error").classList.add("error");
   $("otp-error").textContent = error ?? "";
-  $("otp-title").textContent = error ? "Nouveau code TOTP" : "Code TOTP";
+  $("otp-title").textContent = error ? "New one-time code" : "One-time code";
   $("otp-lede").textContent = error
-    ? "L’ancien code n’est plus bon. Relis le jeton et envoie les 6 chiffres actuels."
-    : "Six chiffres lus sur le jeton (fenêtre 60 s). Ils vont dans la config éphémère, jamais en argv.";
+    ? "The previous code is no longer valid. Read the token again and send the current 6 digits."
+    : "Six digits from your token (60 s window). They go into the ephemeral config, never into argv.";
   syncGo();
   otp.focus();
 }
@@ -65,7 +65,7 @@ async function send() {
   const otp = ($("otp") as HTMLInputElement).value.trim();
   if (!/^\d{6}$/.test(otp)) {
     $("otp-error").classList.add("error");
-    $("otp-error").textContent = "Le code doit contenir exactement 6 chiffres.";
+    $("otp-error").textContent = "The code must be exactly 6 digits.";
     return;
   }
   setBusy(true);
@@ -137,7 +137,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         void invoke<Snapshot>("get_state").then((s) => {
           setBusy(false);
           $("otp-error").textContent =
-            s.lastError ?? "échec de connexion — vois le journal.";
+            s.lastError ?? "connection failed — check the log.";
         });
         break;
       case "idle":

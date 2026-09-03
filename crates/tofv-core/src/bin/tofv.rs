@@ -262,7 +262,7 @@ fn doctor(paths: &AppPaths) -> tofv_core::Result<()> {
 
     if report.blocking {
         Err(tofv_core::Error::Connect(
-            "prérequis bloquants manquants (voir ci-dessus)".into(),
+            "blocking prerequisites are missing (see above)".into(),
         ))
     } else {
         Ok(())

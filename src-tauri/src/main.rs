@@ -24,7 +24,7 @@ const MAX_LOGS: usize = 400;
 const TRAY_ICON_PNG: &[u8] = include_bytes!("../icons/32x32.png");
 const WINDOW_ICON_PNG: &[u8] = include_bytes!("../icons/128x128.png");
 const AUTH_RETRY_MSG: &str =
-    "Code refusé. Le FortiToken F121 change toutes les 60 s — saisis le code affiché maintenant.";
+    "Code rejected. The token rotates about every 60 s — enter the code shown right now.";
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -139,13 +139,13 @@ fn emit_status(app: &tauri::AppHandle, state: &AppState, status: UiStatus) {
     let _ = app.emit("tofv://status", status);
     if let Some(tray) = app.tray_by_id("main") {
         let label = match status {
-            UiStatus::Idle => "TOFV — déconnecté",
-            UiStatus::Connecting => "TOFV — connexion…",
-            UiStatus::Disconnecting => "TOFV — coupure…",
-            UiStatus::Up => "TOFV — connecté",
-            UiStatus::NeedCert => "TOFV — certificat",
-            UiStatus::AuthFailed => "TOFV — auth refusée",
-            UiStatus::Error => "TOFV — erreur",
+            UiStatus::Idle => "TOFV — disconnected",
+            UiStatus::Connecting => "TOFV — connecting…",
+            UiStatus::Disconnecting => "TOFV — disconnecting…",
+            UiStatus::Up => "TOFV — connected",
+            UiStatus::NeedCert => "TOFV — certificate",
+            UiStatus::AuthFailed => "TOFV — auth rejected",
+            UiStatus::Error => "TOFV — error",
         };
         let _ = tray.set_tooltip(Some(label));
     }
@@ -174,7 +174,7 @@ fn adopt_live_tunnel(app: &tauri::AppHandle, state: &AppState) -> bool {
         app,
         state,
         format!(
-            "tofv: tunnel encore actif (pid {}, {iface}) — l'UI précédente a quitté sans Couper. Utilise Couper pour le fermer.",
+            "tofv: tunnel still up (pid {}, {iface}) — the previous UI exited without disconnecting. Use Disconnect to close it.",
             live.pid
         ),
     );
@@ -220,7 +220,7 @@ fn show_otp_prompt(app: &tauri::AppHandle, retry_msg: Option<&str>) {
         return;
     }
     match tauri::WebviewWindowBuilder::new(app, "otp", tauri::WebviewUrl::App("otp.html".into()))
-        .title("TOFV — FortiToken")
+        .title("TOFV — one-time code")
         .inner_size(OTP_WIN_W, OTP_WIN_H)
         .min_inner_size(400.0, 380.0)
         .decorations(false)
@@ -240,7 +240,7 @@ fn show_otp_prompt(app: &tauri::AppHandle, retry_msg: Option<&str>) {
             show_panel(app);
             let _ = app.emit("tofv://ask-otp-fallback", retry_msg.unwrap_or(""));
             let state = app.state::<AppState>();
-            push_log(app, &state, format!("tofv: fenêtre TOTP: {e} — modal du panneau"));
+            push_log(app, &state, format!("tofv: OTP window: {e} — falling back to the panel modal"));
         }
     }
 }
@@ -256,7 +256,7 @@ fn begin_connect_inner(app: &tauri::AppHandle, state: &AppState) -> Result<(), S
     if let Some(live) = probe_live_tunnel() {
         emit_status(app, state, UiStatus::Up);
         return Err(format!(
-            "un tunnel TOFV tourne déjà (pid {}) — Couper d'abord",
+            "a TOFV tunnel is already running (pid {}) — disconnect first",
             live.pid
         ));
     }
@@ -265,7 +265,7 @@ fn begin_connect_inner(app: &tauri::AppHandle, state: &AppState) -> Result<(), S
         show_panel(app);
         let _ = app.emit(
             "tofv://toast",
-            "Prérequis manquants — vois l’écran d’install.",
+            "Missing prerequisites — see the install screen.",
         );
         return Ok(());
     }
@@ -275,7 +275,7 @@ fn begin_connect_inner(app: &tauri::AppHandle, state: &AppState) -> Result<(), S
             show_panel(app);
             let _ = app.emit(
                 "tofv://toast",
-                "Complète le profil (hôte, utilisateur) puis Enregistrer.",
+                "Fill in the profile (host, username) then Save.",
             );
             return Ok(());
         }
@@ -348,7 +348,7 @@ fn save_profile(state: State<'_, AppState>, patch: ProfilePatch) -> Result<Profi
 #[tauri::command]
 fn save_password(password: String) -> Result<(), String> {
     if password.is_empty() {
-        return Err("mot de passe vide".into());
+        return Err("empty password".into());
     }
     SecretToolStore
         .set(DEFAULT_PROFILE_ID, &password)
@@ -392,23 +392,23 @@ fn connect(app: tauri::AppHandle, state: State<'_, AppState>, otp: String) -> Re
     {
         let running = state.running.lock().map_err(|e| e.to_string())?;
         if running.is_some() {
-            return Err("une session est déjà en cours".into());
+            return Err("a session is already running".into());
         }
     }
     if let Some(live) = probe_live_tunnel() {
         emit_status(&app, &state, UiStatus::Up);
         return Err(format!(
-            "un tunnel TOFV tourne déjà (pid {}) — Couper d'abord",
+            "a TOFV tunnel is already running (pid {}) — disconnect first",
             live.pid
         ));
     }
 
     let otp = otp.trim().to_string();
-    validate_totp(&otp).map_err(|_| "le TOTP doit contenir 6 chiffres".to_string())?;
+    validate_totp(&otp).map_err(|_| "the one-time code must be 6 digits".to_string())?;
     push_log(
         &app,
         &state,
-        "tofv: TOTP saisi — lecture du trousseau, puis pkexec…".into(),
+        "tofv: code entered — reading the keyring, then pkexec…".into(),
     );
 
     emit_status(&app, &state, UiStatus::Connecting);
@@ -441,13 +441,12 @@ fn start_session(
         .get(DEFAULT_PROFILE_ID)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| {
-            "aucun mot de passe dans le trousseau — enregistre-le avec le bouton Trousseau"
-                .to_string()
+            "no password in the keyring — store one with the Keyring button".to_string()
         })?;
     push_log(
         app,
         state,
-        "tofv: mot de passe lu, lancement d'openfortivpn…".into(),
+        "tofv: password read, starting openfortivpn…".into(),
     );
 
     let mut profile = load_profile(&state.paths).map_err(|e| e.to_string())?;
@@ -456,7 +455,7 @@ fn start_session(
         push_log(
             app,
             state,
-            "tofv: essai sans trusted-cert (rotation / découverte de l'empreinte)…".into(),
+            "tofv: retrying without trusted-cert (rotation / fingerprint discovery)…".into(),
         );
         profile.trusted_cert = None;
     }
@@ -477,9 +476,9 @@ fn start_session(
         app,
         state,
         if tofv_core::resolve_helper().is_some() {
-            "tofv: démarrage via tofv-helper…".into()
+            "tofv: starting through tofv-helper…".into()
         } else {
-            "tofv: helper absent — refuse d’élever openfortivpn (./scripts/install.sh)".into()
+            "tofv: helper missing — refusing to elevate openfortivpn (./scripts/install.sh)".into()
         },
     );
     let (running, logs) = spawn_connect(req, password).map_err(|e| e.to_string())?;
@@ -508,9 +507,9 @@ fn disconnect_cmd(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(
         &app,
         &state,
         if tofv_core::resolve_helper().is_some() {
-            "tofv: coupure via tofv-helper…".into()
+            "tofv: disconnecting through tofv-helper…".into()
         } else {
-            "tofv: coupure sans helper — kill user seulement (un tunnel root restera)".into()
+            "tofv: disconnecting without the helper — user-level kill only (a root tunnel will survive)".into()
         },
     );
     let app = app.clone();
@@ -518,13 +517,13 @@ fn disconnect_cmd(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(
         let state = app.state::<AppState>();
         if let Some(mut running) = running {
             if let Err(e) = running.terminate() {
-                push_log(&app, &state, format!("tofv: coupure: {e}"));
+                push_log(&app, &state, format!("tofv: disconnect: {e}"));
             }
             drop(running);
         }
         let _ = kill_session(&state.paths);
         emit_status(&app, &state, UiStatus::Idle);
-        push_log(&app, &state, "tofv: session coupée".into());
+        push_log(&app, &state, "tofv: session closed".into());
     });
     Ok(())
 }
@@ -562,7 +561,7 @@ fn open_journal(app: tauri::AppHandle) -> Result<(), String> {
         "journal",
         tauri::WebviewUrl::App("log.html".into()),
     )
-    .title("TOFV — journal")
+    .title("TOFV — log")
     .inner_size(720.0, 520.0)
     .min_inner_size(420.0, 280.0)
     .decorations(false)
@@ -608,13 +607,13 @@ fn apply_outcome(app: &tauri::AppHandle, state: &AppState, outcome: ConnectOutco
                 push_log(
                     app,
                     state,
-                    format!("tofv: rotation certificat\n  ancien {old}\n  nouveau {sha256}"),
+                    format!("tofv: certificate rotation\n  old {old}\n  new {sha256}"),
                 );
             } else {
                 push_log(
                     app,
                     state,
-                    format!("tofv: certificat inconnu {sha256}"),
+                    format!("tofv: unknown certificate {sha256}"),
                 );
             }
         }
@@ -637,7 +636,7 @@ fn apply_outcome(app: &tauri::AppHandle, state: &AppState, outcome: ConnectOutco
                     push_log(
                         app,
                         state,
-                        "tofv: pin actuel refusé, nouvel essai sans trusted-cert…".into(),
+                        "tofv: current pin rejected, retrying without trusted-cert…".into(),
                     );
                     emit_status(app, state, UiStatus::Connecting);
                     let app = app.clone();
@@ -656,7 +655,7 @@ fn apply_outcome(app: &tauri::AppHandle, state: &AppState, outcome: ConnectOutco
             push_log(
                 app,
                 state,
-                "tofv: certificat refusé et pas d'empreinte SHA dans les logs".into(),
+                "tofv: certificate rejected and no SHA fingerprint in the logs".into(),
             );
         }
         ConnectOutcome::AuthFailed => {
@@ -668,14 +667,14 @@ fn apply_outcome(app: &tauri::AppHandle, state: &AppState, outcome: ConnectOutco
             push_log(
                 app,
                 state,
-                "tofv: authentification refusée — nouveau code FortiToken (fenêtre ~60 s)".into(),
+                "tofv: authentication rejected — enter a fresh token code (~60 s window)".into(),
             );
             show_otp_prompt(app, Some(AUTH_RETRY_MSG));
         }
         ConnectOutcome::ExitedAfterUp { code } => {
             let _ = state.pending_otp.lock().map(|mut o| o.take());
             emit_status(app, state, UiStatus::Idle);
-            push_log(app, state, format!("tofv: session terminée ({code:?})"));
+            push_log(app, state, format!("tofv: session ended ({code:?})"));
         }
         ConnectOutcome::Interrupted => {
             let _ = state.pending_otp.lock().map(|mut o| o.take());
@@ -685,7 +684,7 @@ fn apply_outcome(app: &tauri::AppHandle, state: &AppState, outcome: ConnectOutco
             let _ = state.pending_otp.lock().map(|mut o| o.take());
             emit_status(app, state, UiStatus::Error);
             if let Ok(mut err) = state.last_error.lock() {
-                *err = Some(format!("openfortivpn a quitté ({code:?})"));
+                *err = Some(format!("openfortivpn exited ({code:?})"));
             }
         }
     }
@@ -750,7 +749,7 @@ fn poller(app: tauri::AppHandle) {
                         &app,
                         &state,
                         format!(
-                            "tofv: tunnel encore actif (pid {}, {iface}) — l'UI précédente a quitté sans Couper",
+                            "tofv: tunnel still up (pid {}, {iface}) — the previous UI exited without disconnecting",
                             live.pid
                         ),
                     );
@@ -759,7 +758,7 @@ fn poller(app: tauri::AppHandle) {
             None => {
                 if current == Some(UiStatus::Up) {
                     emit_status(&app, &state, UiStatus::Idle);
-                    push_log(&app, &state, "tofv: tunnel disparu".into());
+                    push_log(&app, &state, "tofv: tunnel gone".into());
                 }
             }
         }
@@ -787,7 +786,7 @@ fn main() {
         }
         Ok(singleton::Claim::Server(l)) => Some(l),
         Err(e) => {
-            eprintln!("tofv-app: instance unique: {e}");
+            eprintln!("tofv-app: single instance: {e}");
             None
         }
     };
@@ -817,17 +816,17 @@ fn main() {
 
             if appindicator_available() {
                 let open =
-                    MenuItem::with_id(app, "open", "Ouvrir le panneau", true, None::<&str>)?;
+                    MenuItem::with_id(app, "open", "Open panel", true, None::<&str>)?;
                 let connect =
-                    MenuItem::with_id(app, "connect", "Connecter…", true, None::<&str>)?;
+                    MenuItem::with_id(app, "connect", "Connect…", true, None::<&str>)?;
                 let disconnect =
-                    MenuItem::with_id(app, "disconnect", "Déconnecter", true, None::<&str>)?;
-                let quit = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
+                    MenuItem::with_id(app, "disconnect", "Disconnect", true, None::<&str>)?;
+                let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
                 let menu = Menu::with_items(app, &[&open, &connect, &disconnect, &quit])?;
                 let icon = Image::from_bytes(TRAY_ICON_PNG)?;
                 TrayIconBuilder::with_id("main")
                     .icon(icon)
-                    .tooltip("TOFV — déconnecté")
+                    .tooltip("TOFV — disconnected")
                     .menu(&menu)
                     .show_menu_on_left_click(false)
                     .on_menu_event(|app, event| match event.id.as_ref() {
@@ -867,7 +866,7 @@ fn main() {
                 }
             } else {
                 eprintln!(
-                    "tofv-app: libayatana-appindicator manquante — panneau seul (sudo pacman -S libayatana-appindicator)"
+                    "tofv-app: libayatana-appindicator missing — panel only (sudo pacman -S libayatana-appindicator)"
                 );
                 show_panel(app.handle());
             }

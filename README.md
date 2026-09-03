@@ -497,7 +497,7 @@ Prérequis : Podman, Node, et les paquets runtime
 (`openfortivpn ppp libsecret polkit` — le doctor les rappelle).
 
 ```sh
-git clone https://github.com/ange/tofv.git
+git clone https://github.com/Altagen/TOFV.git
 cd tofv
 ./scripts/install.sh
 tofv doctor

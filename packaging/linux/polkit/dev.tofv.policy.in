@@ -4,7 +4,7 @@
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
   <vendor>TOFV</vendor>
-  <vendor_url>https://github.com/ange/tofv</vendor_url>
+  <vendor_url>https://github.com/Altagen/TOFV</vendor_url>
   <action id="dev.tofv.manage">
     <description>Start or stop the TOFV Fortinet VPN tunnel</description>
     <description xml:lang="fr">Démarrer ou arrêter le tunnel VPN TOFV</description>

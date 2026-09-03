@@ -24,7 +24,7 @@ function paint() {
   frame = requestAnimationFrame(() => {
     frame = 0;
     const el = $("full-log");
-    el.textContent = lines.length ? lines.join("\n") : "en attente.";
+    el.textContent = lines.length ? lines.join("\n") : "waiting.";
     if (stick) el.scrollTop = el.scrollHeight;
   });
 }
