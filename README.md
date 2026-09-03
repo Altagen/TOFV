@@ -66,6 +66,9 @@ These rules are the point of the project, not a footnote:
    `0600` file, and execs with a fixed argv.
 7. The TypeScript frontend has no `shell` or `fs` capability: only the
    declared Tauri commands.
+8. The UI makes no outbound request of its own. Fonts are bundled, and the
+   Content Security Policy allows no remote origin at all — so opening the
+   panel cannot announce itself to a third party, and it works offline.
 
 Found a problem? See [SECURITY.md](SECURITY.md).
 
