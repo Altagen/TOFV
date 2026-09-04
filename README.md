@@ -1,10 +1,18 @@
-# TOFV — Tray OpenFortiVPN
+<div align="center">
+  <img src="branding/logo-256.png" alt="TOFV" width="180" />
 
-[![CI](https://img.shields.io/github/actions/workflow/status/Altagen/TOFV/ci.yml?branch=develop&label=CI)](https://github.com/Altagen/TOFV/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/Altagen/TOFV)](https://github.com/Altagen/TOFV/releases/latest)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+  <h1>TOFV — Tray OpenFortiVPN</h1>
 
-A small desktop client for [openfortivpn](https://github.com/adrienverge/openfortivpn).
+  <p>A small desktop client for <a href="https://github.com/adrienverge/openfortivpn">openfortivpn</a>.</p>
+
+  <p>
+    <a href="https://github.com/Altagen/TOFV/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Altagen/TOFV/ci.yml?branch=develop&label=CI" alt="CI" /></a>
+    <a href="https://github.com/Altagen/TOFV/releases/latest"><img src="https://img.shields.io/github/v/release/Altagen/TOFV" alt="Latest release" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
+  </p>
+</div>
+
+---
 
 TOFV does not reimplement the Fortinet protocol. It wraps the
 `openfortivpn` binary, which already does that job well, and adds what is
@@ -15,6 +23,14 @@ with the secrets redacted.
 
 **Platforms:** Linux first, macOS next.
 **Out of scope:** Windows, reimplementing the tunnel, replacing FortiClient.
+
+<div align="center">
+  <img src="docs/assets/panel.png" alt="The TOFV panel: profile, keyring state, and the exact command it would run" width="820" />
+</div>
+
+The panel is the whole surface: one profile, the keyring entry, and the exact
+command TOFV would run with your credentials — redacted, and shown before
+anything is executed rather than after.
 
 ```
  ┌─────────────────────────────────────────────┐
