@@ -99,7 +99,7 @@ jobs:
       # One SBOM covering both ecosystems: syft reads Cargo.lock and
       # package-lock.json in the same pass, so there is nothing to merge and
       # no unverified binary to download in order to merge it.
-      - uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           path: .
           format: cyclonedx-json
@@ -117,7 +117,7 @@ jobs:
             | tee SHA256SUMS.txt
 
       - name: Generate the release notes
-        uses: orhun/git-cliff-action@3d96a18cc4ec17e9dc69ddcc424ccafaf1f78ce2 # v4
+        uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4
         with:
           config: cliff.toml
           args: --latest --strip header
